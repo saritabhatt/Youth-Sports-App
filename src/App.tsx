@@ -6,6 +6,7 @@ import SportDetailModal from './components/SportDetailModal';
 import ProfileSelector from './components/ProfileSelector';
 import CompareMode from './components/CompareMode';
 import ExportMenu from './components/ExportMenu';
+import { ToastContainer, useToast } from './components/Toast';
 import { 
   ChildProfile, 
   ScoringWeights, 
@@ -34,6 +35,7 @@ import {
 
 type ViewMode = 'setup' | 'results';
 type FilterCategory = SportCategory | 'all';
+type SortOption = 'score' | 'name' | 'age-match' | 'cost';
 
 // Load initial state once outside component to avoid duplicate calls
 const initialProfiles = loadProfiles();
@@ -41,6 +43,9 @@ const initialActiveId = getActiveProfileId();
 const initialViewMode: ViewMode = initialProfiles.length > 0 && initialActiveId ? 'results' : 'setup';
 
 export default function App() {
+  // Toast notifications
+  const { toasts, removeToast, success } = useToast();
+
   // Load initial state from storage
   const [profiles, setProfiles] = useState<ChildProfile[]>(initialProfiles);
   const [activeId, setActiveId] = useState<string | null>(initialActiveId);
@@ -57,6 +62,10 @@ export default function App() {
   const [showWeights, setShowWeights] = useState(false);
   const [showCompare, setShowCompare] = useState(false);
 
+  // Search and sort
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<SortOption>('score');
+
   // Get active profile
   const profile = useMemo(() => {
     return profiles.find(p => p.id === activeId) || null;
@@ -68,20 +77,48 @@ export default function App() {
     return scoreAllSports(profile, weights);
   }, [profile, weights]);
 
-  // Apply filters
+  // Apply filters, search, and sort
   const filteredSports = useMemo(() => {
     let filtered = scoredSports;
-    
+
+    // Apply search
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(s =>
+        s.sport.name.toLowerCase().includes(query) ||
+        s.sport.category.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply category filter
     if (categoryFilter !== 'all') {
       filtered = filtered.filter(s => s.sport.category === categoryFilter);
     }
-    
+
+    // Apply sorting
+    if (sortBy !== 'score') {
+      filtered = [...filtered].sort((a, b) => {
+        switch (sortBy) {
+          case 'name':
+            return a.sport.name.localeCompare(b.sport.name);
+          case 'age-match':
+            const ageOrder = { perfect: 0, good: 1, early: 2, late: 3 };
+            return ageOrder[a.ageMatch] - ageOrder[b.ageMatch];
+          case 'cost':
+            return a.sport.costRange.entryLevel.min - b.sport.costRange.entryLevel.min;
+          default:
+            return 0;
+        }
+      });
+    }
+
+    // Apply top 10 filter
     if (showTopOnly) {
       filtered = filtered.slice(0, 10);
     }
-    
+
     return filtered;
-  }, [scoredSports, categoryFilter, showTopOnly]);
+  }, [scoredSports, categoryFilter, showTopOnly, searchQuery, sortBy]);
 
   // Save weights when changed
   useEffect(() => {
@@ -90,6 +127,7 @@ export default function App() {
 
   // Handlers wrapped in useCallback for performance
   const handleProfileCreated = useCallback((newProfile: ChildProfile) => {
+    const isNew = !profiles.find(p => p.id === newProfile.id);
     saveProfile(newProfile);
     setProfiles(loadProfiles());
     setActiveId(newProfile.id);
@@ -97,7 +135,8 @@ export default function App() {
     setViewMode('results');
     setIsEditingProfile(false);
     setProfileToEdit(null);
-  }, []);
+    success(isNew ? `Profile created for ${newProfile.name}` : `Profile updated for ${newProfile.name}`);
+  }, [profiles, success]);
 
   const handleSelectProfile = useCallback((profileId: string) => {
     setActiveId(profileId);
@@ -112,6 +151,7 @@ export default function App() {
   }, []);
 
   const handleDeleteProfile = useCallback((profileId: string) => {
+    const profileName = profiles.find(p => p.id === profileId)?.name || 'Profile';
     deleteProfile(profileId);
     const updatedProfiles = loadProfiles();
     setProfiles(updatedProfiles);
@@ -128,7 +168,8 @@ export default function App() {
       }
       return currentActiveId;
     });
-  }, []);
+    success(`${profileName} deleted`);
+  }, [profiles, success]);
 
   const handleToggleCompare = useCallback((sportId: string) => {
     setCompareIds(currentIds => {
@@ -204,7 +245,7 @@ export default function App() {
                 </p>
               </div>
               
-              <ChildProfileForm 
+              <ChildProfileForm
                 onProfileCreated={handleProfileCreated}
                 existingProfile={profileToEdit}
                 onCancel={profiles.length > 0 ? () => {
@@ -216,6 +257,9 @@ export default function App() {
             </div>
           )}
         </main>
+
+        {/* Toast Notifications */}
+        <ToastContainer toasts={toasts} onRemove={removeToast} />
       </div>
     );
   }
@@ -380,6 +424,58 @@ export default function App() {
 
           {/* Main Content - Sport Cards */}
           <div className="lg:col-span-3">
+            {/* Search and Sort Bar */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4">
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search Input */}
+                <div className="relative flex-1">
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  <input
+                    type="text"
+                    placeholder="Search sports..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      aria-label="Clear search"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+
+                {/* Sort Dropdown */}
+                <div className="flex items-center gap-2">
+                  <label htmlFor="sort-select" className="text-sm text-slate-500 whitespace-nowrap">Sort by:</label>
+                  <select
+                    id="sort-select"
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortOption)}
+                    className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  >
+                    <option value="score">Best Match</option>
+                    <option value="name">Name (A-Z)</option>
+                    <option value="age-match">Age Timing</option>
+                    <option value="cost">Lowest Cost</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
             {/* Results Header */}
             <div className="flex items-center justify-between mb-4">
               <div>
@@ -387,10 +483,10 @@ export default function App() {
                   {categoryFilter === 'all' ? 'All Sports' : SPORT_CATEGORIES[categoryFilter].name}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  {filteredSports.length} sports ranked for {profile?.name}
+                  {filteredSports.length} sports{searchQuery && ` matching "${searchQuery}"`} ranked for {profile?.name}
                 </p>
               </div>
-              
+
               {compareIds.length > 0 && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-500">{compareIds.length}/4 selected</span>
@@ -421,10 +517,36 @@ export default function App() {
             </div>
 
             {filteredSports.length === 0 && (
-              <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-                <div className="text-4xl mb-3">🔍</div>
-                <h3 className="text-lg font-semibold text-slate-800">No sports found</h3>
-                <p className="text-slate-500">Try adjusting your filters</p>
+              <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
+                <div className="w-20 h-20 mx-auto mb-4 bg-slate-100 rounded-full flex items-center justify-center">
+                  <svg className="w-10 h-10 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800 mb-2">No sports found</h3>
+                <p className="text-slate-500 mb-4 max-w-sm mx-auto">
+                  {searchQuery
+                    ? `No sports match "${searchQuery}". Try a different search term.`
+                    : 'Try adjusting your filters or selecting a different category.'}
+                </p>
+                <div className="flex justify-center gap-3">
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors"
+                    >
+                      Clear Search
+                    </button>
+                  )}
+                  {categoryFilter !== 'all' && (
+                    <button
+                      onClick={() => setCategoryFilter('all')}
+                      className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors"
+                    >
+                      Show All Sports
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -451,6 +573,9 @@ export default function App() {
           zipCode={profile?.zipCode}
         />
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   );
 }

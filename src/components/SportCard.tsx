@@ -18,6 +18,13 @@ const scoreToColor = (score: number): string => {
   return 'text-slate-500';
 };
 
+const scoreToBarColor = (score: number): string => {
+  if (score >= 8) return 'bg-emerald-500';
+  if (score >= 6) return 'bg-blue-500';
+  if (score >= 4) return 'bg-amber-500';
+  return 'bg-slate-400';
+};
+
 const scoreToLabel = (score: number): string => {
   if (score >= 8) return 'Excellent';
   if (score >= 6) return 'Good';
@@ -49,8 +56,8 @@ export default function SportCard({
   const localOrgs = zipCode ? getOrganizationsForSport(sport.id, zipCode) : [];
 
   return (
-    <div 
-      className={`bg-white rounded-xl border hover:shadow-md transition-all duration-200 overflow-hidden ${
+    <div
+      className={`bg-white rounded-xl border transition-all duration-200 overflow-hidden hover-lift ${
         isInCompare ? 'border-emerald-400 ring-2 ring-emerald-100' : 'border-slate-200 hover:border-slate-300'
       }`}
     >
@@ -94,29 +101,40 @@ export default function SportCard({
         )}
       </div>
 
-      {/* Score breakdown */}
-      <div 
+      {/* Score breakdown with animated bars */}
+      <div
         className="px-4 pb-3 cursor-pointer"
         onClick={() => onViewDetails?.(scoredSport)}
       >
-        <div className="grid grid-cols-5 gap-1">
+        <div className="space-y-2">
           {[
-            { key: 'funFactor', label: 'Fun', emoji: '🎉', fullLabel: 'Fun Factor' },
-            { key: 'skillFocus', label: 'Skill', emoji: '🎯', fullLabel: 'Skill Development' },
-            { key: 'competition', label: 'Comp', emoji: '🏆', fullLabel: 'Competition Level' },
-            { key: 'opportunity', label: 'Opp', emoji: '📈', fullLabel: 'Opportunity' },
-            { key: 'accessibility', label: 'Cost', emoji: '💰', fullLabel: 'Cost Accessibility' }
-          ].map(({ key, label, emoji, fullLabel }) => {
+            { key: 'funFactor', label: 'Fun Factor', emoji: '🎉' },
+            { key: 'skillFocus', label: 'Skill Development', emoji: '🎯' },
+            { key: 'competition', label: 'Low Competition', emoji: '🏆' },
+            { key: 'opportunity', label: 'Physical Fit', emoji: '📈' },
+            { key: 'accessibility', label: 'Affordability', emoji: '💰' }
+          ].map(({ key, label, emoji }) => {
             const score = scores[key as keyof typeof scores];
             const textLabel = scoreToLabel(score);
             return (
-              <div key={key} className="text-center p-1.5 bg-slate-50 rounded" title={`${fullLabel}: ${score}/10 (${textLabel})`}>
-                <div className="text-xs mb-0.5" aria-hidden="true">{emoji}</div>
-                <div className={`text-sm font-semibold ${scoreToColor(score)}`}>
-                  {score}
-                  <span className="sr-only"> out of 10 - {textLabel}</span>
+              <div key={key} className="group" title={`${label}: ${score}/10 (${textLabel})`}>
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs text-slate-600 flex items-center gap-1">
+                    <span aria-hidden="true">{emoji}</span>
+                    <span className="hidden sm:inline">{label}</span>
+                    <span className="sm:hidden">{label.split(' ')[0]}</span>
+                  </span>
+                  <span className={`text-xs font-semibold ${scoreToColor(score)}`}>
+                    {score}
+                    <span className="sr-only"> out of 10 - {textLabel}</span>
+                  </span>
                 </div>
-                <div className="text-[10px] text-slate-400">{label}</div>
+                <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${scoreToBarColor(score)}`}
+                    style={{ width: `${score * 10}%` }}
+                  />
+                </div>
               </div>
             );
           })}
