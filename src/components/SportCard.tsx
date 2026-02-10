@@ -18,6 +18,13 @@ const scoreToColor = (score: number): string => {
   return 'text-slate-500';
 };
 
+const scoreToLabel = (score: number): string => {
+  if (score >= 8) return 'Excellent';
+  if (score >= 6) return 'Good';
+  if (score >= 4) return 'Fair';
+  return 'Low';
+};
+
 const ageMatchColors: Record<string, { bg: string; text: string; label: string }> = {
   perfect: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Perfect Timing' },
   good: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Good Time' },
@@ -67,8 +74,9 @@ export default function SportCard({
               weightedTotal >= 70 ? 'text-emerald-600' :
               weightedTotal >= 50 ? 'text-blue-600' :
               'text-slate-600'
-            }`}>
+            }`} title={`Match score: ${weightedTotal}% - ${weightedTotal >= 70 ? 'Strong match' : weightedTotal >= 50 ? 'Good match' : 'Fair match'}`}>
               {weightedTotal}
+              <span className="sr-only">% - {weightedTotal >= 70 ? 'Strong match' : weightedTotal >= 50 ? 'Good match' : 'Fair match'}</span>
             </div>
             <div className="text-xs text-slate-400">score</div>
           </div>
@@ -93,18 +101,20 @@ export default function SportCard({
       >
         <div className="grid grid-cols-5 gap-1">
           {[
-            { key: 'funFactor', label: 'Fun', emoji: '🎉' },
-            { key: 'skillFocus', label: 'Skill', emoji: '🎯' },
-            { key: 'competition', label: 'Comp', emoji: '🏆' },
-            { key: 'opportunity', label: 'Opp', emoji: '📈' },
-            { key: 'accessibility', label: 'Cost', emoji: '💰' }
-          ].map(({ key, label, emoji }) => {
+            { key: 'funFactor', label: 'Fun', emoji: '🎉', fullLabel: 'Fun Factor' },
+            { key: 'skillFocus', label: 'Skill', emoji: '🎯', fullLabel: 'Skill Development' },
+            { key: 'competition', label: 'Comp', emoji: '🏆', fullLabel: 'Competition Level' },
+            { key: 'opportunity', label: 'Opp', emoji: '📈', fullLabel: 'Opportunity' },
+            { key: 'accessibility', label: 'Cost', emoji: '💰', fullLabel: 'Cost Accessibility' }
+          ].map(({ key, label, emoji, fullLabel }) => {
             const score = scores[key as keyof typeof scores];
+            const textLabel = scoreToLabel(score);
             return (
-              <div key={key} className="text-center p-1.5 bg-slate-50 rounded">
-                <div className="text-xs mb-0.5">{emoji}</div>
+              <div key={key} className="text-center p-1.5 bg-slate-50 rounded" title={`${fullLabel}: ${score}/10 (${textLabel})`}>
+                <div className="text-xs mb-0.5" aria-hidden="true">{emoji}</div>
                 <div className={`text-sm font-semibold ${scoreToColor(score)}`}>
                   {score}
+                  <span className="sr-only"> out of 10 - {textLabel}</span>
                 </div>
                 <div className="text-[10px] text-slate-400">{label}</div>
               </div>

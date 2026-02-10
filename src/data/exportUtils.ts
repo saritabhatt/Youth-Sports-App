@@ -153,10 +153,16 @@ export function downloadFile(content: string, filename: string, mimeType: string
   const link = document.createElement('a');
   link.href = url;
   link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  link.style.display = 'none';
+  try {
+    document.body.appendChild(link);
+    link.click();
+  } finally {
+    if (link.parentNode) {
+      document.body.removeChild(link);
+    }
+    URL.revokeObjectURL(url);
+  }
 }
 
 export function downloadTextReport(profile: ChildProfile, scoredSports: ScoredSport[]): void {
@@ -493,15 +499,18 @@ export function generatePrintableHTML(
   `;
 }
 
-export function openPrintableReport(profile: ChildProfile, scoredSports: ScoredSport[]): void {
+export function openPrintableReport(profile: ChildProfile, scoredSports: ScoredSport[]): boolean {
   const html = generatePrintableHTML(profile, scoredSports);
   const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(html);
-    printWindow.document.close();
-    // Delay print to allow styles to load
-    setTimeout(() => {
-      printWindow.print();
-    }, 500);
+  if (!printWindow) {
+    alert('Unable to open print window. Please check if popups are blocked and try again.');
+    return false;
   }
+  printWindow.document.write(html);
+  printWindow.document.close();
+  // Delay print to allow styles to load
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+  return true;
 }

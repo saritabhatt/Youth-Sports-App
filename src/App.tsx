@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import ChildProfileForm from './components/ChildProfileForm';
 import ScoringWeightsSliders from './components/ScoringWeightsSliders';
 import SportCard from './components/SportCard';
@@ -35,19 +35,20 @@ import {
 type ViewMode = 'setup' | 'results';
 type FilterCategory = SportCategory | 'all';
 
+// Load initial state once outside component to avoid duplicate calls
+const initialProfiles = loadProfiles();
+const initialActiveId = getActiveProfileId();
+const initialViewMode: ViewMode = initialProfiles.length > 0 && initialActiveId ? 'results' : 'setup';
+
 export default function App() {
   // Load initial state from storage
-  const [profiles, setProfiles] = useState<ChildProfile[]>(() => loadProfiles());
-  const [activeId, setActiveId] = useState<string | null>(() => getActiveProfileId());
+  const [profiles, setProfiles] = useState<ChildProfile[]>(initialProfiles);
+  const [activeId, setActiveId] = useState<string | null>(initialActiveId);
   const [weights, setWeights] = useState<ScoringWeights>(() => loadWeights());
   const [compareIds, setCompareIds] = useState<string[]>(() => loadCompareList());
-  
+
   // UI state
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    const profiles = loadProfiles();
-    const activeId = getActiveProfileId();
-    return profiles.length > 0 && activeId ? 'results' : 'setup';
-  });
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode);
   const [categoryFilter, setCategoryFilter] = useState<FilterCategory>('all');
   const [showTopOnly, setShowTopOnly] = useState(false);
   const [selectedSport, setSelectedSport] = useState<ScoredSport | null>(null);
@@ -87,8 +88,8 @@ export default function App() {
     saveWeights(weights);
   }, [weights]);
 
-  // Handlers
-  const handleProfileCreated = (newProfile: ChildProfile) => {
+  // Handlers wrapped in useCallback for performance
+  const handleProfileCreated = useCallback((newProfile: ChildProfile) => {
     saveProfile(newProfile);
     setProfiles(loadProfiles());
     setActiveId(newProfile.id);
@@ -96,48 +97,53 @@ export default function App() {
     setViewMode('results');
     setIsEditingProfile(false);
     setProfileToEdit(null);
-  };
+  }, []);
 
-  const handleSelectProfile = (profileId: string) => {
+  const handleSelectProfile = useCallback((profileId: string) => {
     setActiveId(profileId);
     setActiveProfileId(profileId);
     setViewMode('results');
-  };
+  }, []);
 
-  const handleEditProfile = (p: ChildProfile) => {
+  const handleEditProfile = useCallback((p: ChildProfile) => {
     setProfileToEdit(p);
     setIsEditingProfile(true);
     setViewMode('setup');
-  };
+  }, []);
 
-  const handleDeleteProfile = (profileId: string) => {
+  const handleDeleteProfile = useCallback((profileId: string) => {
     deleteProfile(profileId);
     const updatedProfiles = loadProfiles();
     setProfiles(updatedProfiles);
-    
-    if (profileId === activeId) {
-      if (updatedProfiles.length > 0) {
-        setActiveId(updatedProfiles[0].id);
-        setActiveProfileId(updatedProfiles[0].id);
-      } else {
-        setActiveId(null);
-        setViewMode('setup');
+
+    setActiveId(currentActiveId => {
+      if (profileId === currentActiveId) {
+        if (updatedProfiles.length > 0) {
+          setActiveProfileId(updatedProfiles[0].id);
+          return updatedProfiles[0].id;
+        } else {
+          setViewMode('setup');
+          return null;
+        }
       }
-    }
-  };
+      return currentActiveId;
+    });
+  }, []);
 
-  const handleToggleCompare = (sportId: string) => {
-    if (compareIds.includes(sportId)) {
-      setCompareIds(removeFromCompare(sportId));
-    } else {
-      setCompareIds(addToCompare(sportId));
-    }
-  };
+  const handleToggleCompare = useCallback((sportId: string) => {
+    setCompareIds(currentIds => {
+      if (currentIds.includes(sportId)) {
+        return removeFromCompare(sportId);
+      } else {
+        return addToCompare(sportId);
+      }
+    });
+  }, []);
 
-  const handleClearCompare = () => {
+  const handleClearCompare = useCallback(() => {
     clearCompare();
     setCompareIds([]);
-  };
+  }, []);
 
   const region = profile ? getRegionFromZip(profile.zipCode) : null;
 
@@ -426,10 +432,10 @@ export default function App() {
       </main>
 
       {/* Sport Detail Modal */}
-      {selectedSport && region && (
+      {selectedSport && (
         <SportDetailModal
           scoredSport={selectedSport}
-          region={region}
+          region={region || 'west-coast'}
           onClose={() => setSelectedSport(null)}
         />
       )}

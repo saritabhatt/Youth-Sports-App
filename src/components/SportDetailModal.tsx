@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { ScoredSport } from '../data/scoringEngine';
 import { SPORT_CATEGORIES, REGION_NAMES, RegionType, SportCategory } from '../data/sportsData';
 
@@ -10,24 +11,50 @@ interface SportDetailModalProps {
 export default function SportDetailModal({ scoredSport, region, onClose }: SportDetailModalProps) {
   const { sport, scores, weightedTotal, heightAdvantageNote, competitionNote, ageMatchNote } = scoredSport;
   const category = SPORT_CATEGORIES[sport.category as SportCategory];
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const regionalComp = sport.regionalCompetition.find(rc => rc.region === region);
 
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  // Focus trap and initial focus
+  useEffect(() => {
+    const previousActiveElement = document.activeElement as HTMLElement;
+    modalRef.current?.focus();
+    return () => {
+      previousActiveElement?.focus();
+    };
+  }, []);
+
   return (
-    <div 
+    <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm"
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sport-modal-title"
     >
-      <div 
-        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
+      <div
+        ref={modalRef}
+        tabIndex={-1}
+        className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-200 p-6 flex items-start justify-between">
           <div className="flex items-center gap-4">
-            <div className="text-4xl">{category.icon}</div>
+            <div className="text-4xl" aria-hidden="true">{category.icon}</div>
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">{sport.name}</h2>
+              <h2 id="sport-modal-title" className="text-2xl font-bold text-slate-800">{sport.name}</h2>
               <p className="text-slate-500">{category.name}</p>
             </div>
           </div>

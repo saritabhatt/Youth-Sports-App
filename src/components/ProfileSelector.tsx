@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ChildProfile, formatHeight } from '../data/scoringEngine';
 
 interface ProfileSelectorProps {
@@ -17,6 +18,24 @@ export default function ProfileSelector({
   onDelete,
   onCreateNew
 }: ProfileSelectorProps) {
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+  const handleDeleteClick = (e: React.MouseEvent, profileId: string) => {
+    e.stopPropagation();
+    setConfirmingDeleteId(profileId);
+  };
+
+  const handleConfirmDelete = (e: React.MouseEvent, profileId: string) => {
+    e.stopPropagation();
+    onDelete(profileId);
+    setConfirmingDeleteId(null);
+  };
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmingDeleteId(null);
+  };
+
   if (profiles.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -42,71 +61,88 @@ export default function ProfileSelector({
           + Add
         </button>
       </div>
-      
+
       <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
         {profiles.map(profile => {
           const isActive = profile.id === activeProfileId;
+          const isConfirmingDelete = confirmingDeleteId === profile.id;
+
           return (
             <div
               key={profile.id}
               className={`p-3 cursor-pointer transition-colors ${
                 isActive ? 'bg-emerald-50' : 'hover:bg-slate-50'
               }`}
-              onClick={() => onSelect(profile.id)}
+              onClick={() => !isConfirmingDelete && onSelect(profile.id)}
             >
-              <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
-                  isActive ? 'bg-emerald-100' : 'bg-slate-100'
-                }`}>
-                  {profile.gender === 'male' ? '👦' : '👧'}
+              {isConfirmingDelete ? (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm text-slate-700">Delete {profile.name}?</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={(e) => handleConfirmDelete(e, profile.id)}
+                      className="px-3 py-1 bg-red-500 text-white text-xs rounded-lg hover:bg-red-600 transition-colors font-medium"
+                    >
+                      Delete
+                    </button>
+                    <button
+                      onClick={handleCancelDelete}
+                      className="px-3 py-1 bg-slate-200 text-slate-700 text-xs rounded-lg hover:bg-slate-300 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`font-medium truncate ${isActive ? 'text-emerald-700' : 'text-slate-800'}`}>
-                      {profile.name}
-                    </span>
-                    {isActive && (
-                      <span className="text-xs bg-emerald-500 text-white px-1.5 py-0.5 rounded">
-                        Active
+              ) : (
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${
+                    isActive ? 'bg-emerald-100' : 'bg-slate-100'
+                  }`} aria-hidden="true">
+                    {profile.gender === 'male' ? '👦' : '👧'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={`font-medium truncate ${isActive ? 'text-emerald-700' : 'text-slate-800'}`}>
+                        {profile.name}
                       </span>
-                    )}
+                      {isActive && (
+                        <span className="text-xs bg-emerald-500 text-white px-1.5 py-0.5 rounded">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {profile.age} yrs • {profile.state}
+                      {profile.estimatedAdultHeightInches && ` • ${formatHeight(profile.estimatedAdultHeightInches)}`}
+                    </div>
                   </div>
-                  <div className="text-xs text-slate-500">
-                    {profile.age} yrs • {profile.state}
-                    {profile.estimatedAdultHeightInches && ` • ${formatHeight(profile.estimatedAdultHeightInches)}`}
-                  </div>
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(profile);
-                    }}
-                    className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
-                    title="Edit profile"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                    </svg>
-                  </button>
-                  {profiles.length > 1 && (
+                  <div className="flex gap-1">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (confirm(`Delete ${profile.name}'s profile?`)) {
-                          onDelete(profile.id);
-                        }
+                        onEdit(profile);
                       }}
-                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                      title="Delete profile"
+                      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                      aria-label={`Edit ${profile.name}'s profile`}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                       </svg>
                     </button>
-                  )}
+                    {profiles.length > 1 && (
+                      <button
+                        onClick={(e) => handleDeleteClick(e, profile.id)}
+                        className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                        aria-label={`Delete ${profile.name}'s profile`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           );
         })}

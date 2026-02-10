@@ -1,6 +1,21 @@
 // Storage utility for persisting profiles and settings
 import { ChildProfile, ScoringWeights, DEFAULT_WEIGHTS } from './scoringEngine';
 
+// Storage error notification - users can be alerted when data fails to save
+let storageErrorCallback: ((message: string) => void) | null = null;
+
+export function setStorageErrorCallback(callback: (message: string) => void): void {
+  storageErrorCallback = callback;
+}
+
+function notifyStorageError(operation: string, error: unknown): void {
+  const message = `Failed to ${operation}. Your changes may not be saved.`;
+  console.error(message, error);
+  if (storageErrorCallback) {
+    storageErrorCallback(message);
+  }
+}
+
 const STORAGE_KEYS = {
   PROFILES: 'the-long-game-profiles',
   ACTIVE_PROFILE_ID: 'the-long-game-active-profile',
@@ -16,7 +31,7 @@ export function saveProfiles(profiles: ChildProfile[]): void {
   try {
     localStorage.setItem(STORAGE_KEYS.PROFILES, JSON.stringify(profiles));
   } catch (e) {
-    console.error('Failed to save profiles:', e);
+    notifyStorageError('save profiles', e);
   }
 }
 
@@ -35,13 +50,13 @@ export function loadProfiles(): ChildProfile[] {
 export function saveProfile(profile: ChildProfile): void {
   const profiles = loadProfiles();
   const existingIndex = profiles.findIndex(p => p.id === profile.id);
-  
+
   if (existingIndex >= 0) {
     profiles[existingIndex] = profile;
   } else {
     profiles.push(profile);
   }
-  
+
   saveProfiles(profiles);
 }
 
@@ -49,7 +64,7 @@ export function deleteProfile(profileId: string): void {
   const profiles = loadProfiles();
   const filtered = profiles.filter(p => p.id !== profileId);
   saveProfiles(filtered);
-  
+
   // Clear active if it was deleted
   const activeId = getActiveProfileId();
   if (activeId === profileId) {
@@ -69,7 +84,7 @@ export function setActiveProfileId(profileId: string | null): void {
       localStorage.removeItem(STORAGE_KEYS.ACTIVE_PROFILE_ID);
     }
   } catch (e) {
-    console.error('Failed to save active profile:', e);
+    notifyStorageError('save active profile', e);
   }
 }
 
@@ -85,7 +100,7 @@ export function getActiveProfileId(): string | null {
 export function getActiveProfile(): ChildProfile | null {
   const activeId = getActiveProfileId();
   if (!activeId) return null;
-  
+
   const profiles = loadProfiles();
   return profiles.find(p => p.id === activeId) || null;
 }
@@ -98,7 +113,7 @@ export function saveWeights(weights: ScoringWeights): void {
   try {
     localStorage.setItem(STORAGE_KEYS.WEIGHTS, JSON.stringify(weights));
   } catch (e) {
-    console.error('Failed to save weights:', e);
+    notifyStorageError('save scoring weights', e);
   }
 }
 
@@ -122,7 +137,7 @@ export function saveCompareList(sportIds: string[]): void {
   try {
     localStorage.setItem(STORAGE_KEYS.COMPARE_LIST, JSON.stringify(sportIds));
   } catch (e) {
-    console.error('Failed to save compare list:', e);
+    notifyStorageError('save compare list', e);
   }
 }
 
@@ -168,6 +183,6 @@ export function clearAllStorage(): void {
       localStorage.removeItem(key);
     });
   } catch (e) {
-    console.error('Failed to clear storage:', e);
+    notifyStorageError('clear storage', e);
   }
 }

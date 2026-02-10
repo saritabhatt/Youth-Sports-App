@@ -1,7 +1,16 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { ChildProfile } from '../data/scoringEngine';
 import { estimateAdultHeight, formatHeight, parseHeight } from '../data/scoringEngine';
 import { Gender } from '../data/sportsData';
+
+// Generate a unique ID using crypto API with fallback
+function generateUniqueId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback for older browsers
+  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
 
 interface ChildProfileFormProps {
   onProfileCreated: (profile: ChildProfile) => void;
@@ -43,6 +52,9 @@ const ETHNICITY_OPTIONS = [
 ];
 
 export default function ChildProfileForm({ onProfileCreated, existingProfile, onCancel }: ChildProfileFormProps) {
+  // Unique IDs for form accessibility
+  const formId = useId();
+
   // Basic info
   const [name, setName] = useState(existingProfile?.name || '');
   const [age, setAge] = useState(existingProfile?.age || 8);
@@ -104,7 +116,7 @@ export default function ChildProfileForm({ onProfileCreated, existingProfile, on
     if (!validateForm()) return;
     
     const profile: ChildProfile = {
-      id: existingProfile?.id || Date.now().toString(),
+      id: existingProfile?.id || generateUniqueId(),
       name: name.trim(),
       age,
       gender,
@@ -133,45 +145,52 @@ export default function ChildProfileForm({ onProfileCreated, existingProfile, on
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor={`${formId}-name`} className="block text-sm font-medium text-slate-700 mb-1">
               Child's Name
             </label>
             <input
+              id={`${formId}-name`}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter name"
+              aria-invalid={errors.name ? 'true' : 'false'}
+              aria-describedby={errors.name ? `${formId}-name-error` : undefined}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                 errors.name ? 'border-red-500' : 'border-slate-300'
               }`}
             />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            {errors.name && <p id={`${formId}-name-error`} className="text-red-500 text-xs mt-1" role="alert">{errors.name}</p>}
           </div>
           
           {/* Age */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor={`${formId}-age`} className="block text-sm font-medium text-slate-700 mb-1">
               Age (years)
             </label>
             <input
+              id={`${formId}-age`}
               type="number"
               value={age}
               onChange={(e) => setAge(parseInt(e.target.value) || 0)}
               min={3}
               max={18}
+              aria-invalid={errors.age ? 'true' : 'false'}
+              aria-describedby={errors.age ? `${formId}-age-error` : undefined}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                 errors.age ? 'border-red-500' : 'border-slate-300'
               }`}
             />
-            {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
+            {errors.age && <p id={`${formId}-age-error`} className="text-red-500 text-xs mt-1" role="alert">{errors.age}</p>}
           </div>
-          
+
           {/* Gender */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor={`${formId}-gender`} className="block text-sm font-medium text-slate-700 mb-1">
               Gender
             </label>
             <select
+              id={`${formId}-gender`}
               value={gender}
               onChange={(e) => {
                 setGender(e.target.value as Gender);
@@ -183,13 +202,14 @@ export default function ChildProfileForm({ onProfileCreated, existingProfile, on
               <option value="female">Female</option>
             </select>
           </div>
-          
+
           {/* Ethnicity */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor={`${formId}-ethnicity`} className="block text-sm font-medium text-slate-700 mb-1">
               Ethnicity <span className="text-slate-400 font-normal">(optional)</span>
             </label>
             <select
+              id={`${formId}-ethnicity`}
               value={ethnicity}
               onChange={(e) => setEthnicity(e.target.value)}
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -212,31 +232,37 @@ export default function ChildProfileForm({ onProfileCreated, existingProfile, on
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* ZIP Code */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor={`${formId}-zipcode`} className="block text-sm font-medium text-slate-700 mb-1">
               ZIP Code
             </label>
             <input
+              id={`${formId}-zipcode`}
               type="text"
               value={zipCode}
               onChange={(e) => setZipCode(e.target.value.replace(/\D/g, '').slice(0, 5))}
               placeholder="e.g., 93101"
               maxLength={5}
+              aria-invalid={errors.zipCode ? 'true' : 'false'}
+              aria-describedby={`${formId}-zipcode-hint${errors.zipCode ? ` ${formId}-zipcode-error` : ''}`}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                 errors.zipCode ? 'border-red-500' : 'border-slate-300'
               }`}
             />
-            {errors.zipCode && <p className="text-red-500 text-xs mt-1">{errors.zipCode}</p>}
-            <p className="text-xs text-slate-400 mt-1">Used to estimate local competition levels</p>
+            {errors.zipCode && <p id={`${formId}-zipcode-error`} className="text-red-500 text-xs mt-1" role="alert">{errors.zipCode}</p>}
+            <p id={`${formId}-zipcode-hint`} className="text-xs text-slate-400 mt-1">Used to estimate local competition levels</p>
           </div>
-          
+
           {/* State */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor={`${formId}-state`} className="block text-sm font-medium text-slate-700 mb-1">
               State
             </label>
             <select
+              id={`${formId}-state`}
               value={state}
               onChange={(e) => setState(e.target.value)}
+              aria-invalid={errors.state ? 'true' : 'false'}
+              aria-describedby={errors.state ? `${formId}-state-error` : undefined}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 ${
                 errors.state ? 'border-red-500' : 'border-slate-300'
               }`}
@@ -246,7 +272,7 @@ export default function ChildProfileForm({ onProfileCreated, existingProfile, on
                 <option key={s.abbr} value={s.abbr}>{s.name}</option>
               ))}
             </select>
-            {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+            {errors.state && <p id={`${formId}-state-error`} className="text-red-500 text-xs mt-1" role="alert">{errors.state}</p>}
           </div>
         </div>
       </div>
