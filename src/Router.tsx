@@ -3,6 +3,8 @@ import { Home } from './pages/Home';
 import { Results } from './pages/Results';
 import { About } from './pages/About';
 import SportDetail from './pages/SportDetail';
+import BudgetPlanner from './pages/BudgetPlanner';
+import LocalPrograms from './pages/LocalPrograms';
 
 export function Router() {
   return (
@@ -12,10 +14,9 @@ export function Router() {
         <Route path="/results" element={<Results />} />
         <Route path="/about" element={<About />} />
         <Route path="/sports/:sportId" element={<SportDetail />} />
-        {/* New features will add routes here */}
-        {/* /budget-planner */}
-        {/* /local-programs */}
-        {/* /trials */}
+        <Route path="/budget-planner" element={<BudgetPlanner />} />
+        <Route path="/local-programs" element={<LocalPrograms />} />
+        {/* /trials route to be added after Trial Tracker feature */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
