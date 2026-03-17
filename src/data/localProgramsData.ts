@@ -795,6 +795,170 @@ const santaBarbaraPrograms: LocalProgram[] = [
     contact: { phone: '(805) 555-6000' }
   },
 
+  // PAIGE YOUTH SPORTS
+  {
+    id: 'sb-paige-soccer',
+    region: 'santa-barbara',
+    name: 'Paige Youth Sports - Soccer',
+    organization: 'Paige Youth Sports',
+    organizationType: 'nonprofit',
+    sport: 'Soccer',
+    description: 'Community-focused recreational soccer programs for all skill levels. Emphasis on fun and development.',
+    ageRange: { min: 4, max: 14 },
+    ageGroups: ['early-childhood', 'elementary', 'middle-school'],
+    season: 'year-round',
+    location: 'Carpinteria & Santa Barbara',
+    cost: { min: 120, max: 250 },
+    programType: 'recreational',
+    skillLevel: 'all-levels',
+    registrationRequired: true,
+    contact: { 
+      website: 'https://www.paigeyouthsports.org',
+      phone: '(805) 555-0100'
+    }
+  },
+  {
+    id: 'sb-paige-flag-football',
+    region: 'santa-barbara',
+    name: 'Paige Youth Sports - Flag Football',
+    organization: 'Paige Youth Sports',
+    organizationType: 'nonprofit',
+    sport: 'Flag Football',
+    description: 'Non-contact flag football for youth. Great introduction to football fundamentals without tackling.',
+    ageRange: { min: 5, max: 12 },
+    ageGroups: ['elementary', 'middle-school'],
+    season: 'fall',
+    seasonDates: { start: 'September', end: 'November' },
+    location: 'Santa Barbara Parks',
+    cost: { min: 100, max: 150 },
+    programType: 'recreational',
+    skillLevel: 'all-levels',
+    registrationRequired: true,
+    contact: { website: 'https://www.paigeyouthsports.org' }
+  },
+  {
+    id: 'sb-paige-baseball',
+    region: 'santa-barbara',
+    name: 'Paige Youth Sports - Baseball',
+    organization: 'Paige Youth Sports',
+    organizationType: 'nonprofit',
+    sport: 'Baseball',
+    description: 'Recreational baseball with emphasis on skill development and teamwork.',
+    ageRange: { min: 6, max: 14 },
+    ageGroups: ['elementary', 'middle-school'],
+    season: 'spring',
+    seasonDates: { start: 'March', end: 'May' },
+    location: 'Santa Barbara Parks',
+    cost: { min: 140, max: 200 },
+    programType: 'recreational',
+    skillLevel: 'all-levels',
+    registrationRequired: true,
+    contact: { website: 'https://www.paigeyouthsports.org' }
+  },
+
+  // UNICO CLUB SOCCER
+  {
+    id: 'sb-unico-soccer',
+    region: 'santa-barbara',
+    name: 'Unico Club Soccer',
+    organization: 'Unico Club',
+    organizationType: 'club',
+    sport: 'Soccer',
+    description: 'Competitive club soccer with multiple age groups and competitive pathways.',
+    ageRange: { min: 6, max: 18 },
+    ageGroups: ['elementary', 'middle-school', 'high-school'],
+    season: 'year-round',
+    location: 'Montecito',
+    cost: { min: 400, max: 1200 },
+    programType: 'competitive',
+    skillLevel: 'intermediate',
+    registrationRequired: true,
+    contact: { 
+      website: 'https://www.unicoclub.org',
+      phone: '(805) 555-0200'
+    }
+  },
+
+  // SANTA BARBARA SWIM CLUB
+  {
+    id: 'sb-swim-club-lessons',
+    region: 'santa-barbara',
+    name: 'Santa Barbara Swim Club - Recreational Lessons',
+    organization: 'Santa Barbara Swim Club',
+    organizationType: 'club',
+    sport: 'Swimming',
+    description: 'Swim lessons from beginner to advanced. USA Swimming affiliate with year-round programs.',
+    ageRange: { min: 4, max: 18 },
+    ageGroups: ['early-childhood', 'elementary', 'middle-school', 'high-school'],
+    season: 'year-round',
+    location: 'Santa Barbara High School Pool',
+    cost: { min: 80, max: 300 },
+    programType: 'instructional',
+    skillLevel: 'all-levels',
+    registrationRequired: true,
+    contact: { 
+      website: 'https://www.sbswimclub.org',
+      phone: '(805) 555-0150'
+    }
+  },
+
+  // YMCA OF SANTA BARBARA
+  {
+    id: 'sb-ymca-multi-sport',
+    region: 'santa-barbara',
+    name: 'YMCA of Santa Barbara - Youth Programs',
+    organization: 'YMCA of Santa Barbara',
+    organizationType: 'nonprofit',
+    sport: 'Multi-Sport',
+    description: 'Swimming lessons, gymnastics, basketball, soccer, and more. Inclusive programming for all abilities.',
+    ageRange: { min: 3, max: 17 },
+    ageGroups: ['early-childhood', 'elementary', 'middle-school', 'high-school'],
+    season: 'year-round',
+    location: 'Santa Barbara YMCA Facility',
+    cost: { min: 60, max: 250 },
+    programType: 'recreational',
+    skillLevel: 'all-levels',
+    registrationRequired: true,
+    contact: { 
+      website: 'https://www.sbymca.org',
+      phone: '(805) 555-0180'
+    }
+  },
+  {
+    id: 'sb-ymca-swim',
+    region: 'santa-barbara',
+    name: 'YMCA - Swim Lessons & Teams',
+    organization: 'YMCA of Santa Barbara',
+    organizationType: 'nonprofit',
+    sport: 'Swimming',
+    description: 'Swim lessons for all levels plus competitive swim team options.',
+    ageRange: { min: 4, max: 18 },
+    ageGroups: ['elementary', 'middle-school', 'high-school'],
+    season: 'year-round',
+    location: 'Santa Barbara YMCA',
+    cost: { min: 100, max: 400 },
+    programType: 'recreational',
+    skillLevel: 'all-levels',
+    registrationRequired: true,
+    contact: { website: 'https://www.sbymca.org' }
+  },
+  {
+    id: 'sb-ymca-basketball',
+    region: 'santa-barbara',
+    name: 'YMCA - Basketball & Volleyball',
+    organization: 'YMCA of Santa Barbara',
+    organizationType: 'nonprofit',
+    sport: 'Basketball',
+    description: 'Youth basketball leagues and clinics, plus volleyball programs.',
+    ageRange: { min: 6, max: 15 },
+    ageGroups: ['elementary', 'middle-school'],
+    season: 'fall',
+    cost: { min: 100, max: 200 },
+    programType: 'recreational',
+    skillLevel: 'all-levels',
+    contact: { website: 'https://www.sbymca.org' }
+  },
+
   // Additional comprehensive programs for Santa Barbara
   ...Array.from({ length: 30 }, (_, i) => ({
     id: `sb-additional-${i + 1}`,
