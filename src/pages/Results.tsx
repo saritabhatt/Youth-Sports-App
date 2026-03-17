@@ -23,70 +23,74 @@ import {
   REGION_NAMES,
 } from '../data/sportsData';
 import {
-  loadProfiles,
-  saveProfile,
-  deleteProfile,
-  getActiveProfileId,
   setActiveProfileId,
-  loadWeights,
-  saveWeights,
-  loadCompareList,
-  addToCompare,
-  removeFromCompare,
-  clearCompare,
 } from '../data/storage';
+import {
+  useProfiles,
+  useSaveProfile,
+  useDeleteProfile,
+  useProfile,
+  useWeights,
+  useSaveWeights,
+  useScoredSports,
+  useCompareList,
+  useAddToCompare,
+  useRemoveFromCompare,
+  useClearCompare,
+} from '../hooks';
 
 type ViewMode = 'setup' | 'results';
 type FilterCategory = SportCategory | 'all';
 type SortOption = 'score' | 'name' | 'age-match' | 'cost';
 
-// Load initial state once outside component to avoid duplicate calls
-const initialProfiles = loadProfiles();
-const initialActiveId = getActiveProfileId();
-const initialViewMode: ViewMode = initialProfiles.length > 0 && initialActiveId ? 'results' : 'setup';
-
 function ResultsContent() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { toasts, removeToast, success } = useToast();
 
-  // State management
-  const [profiles, setProfiles] = useState<ChildProfile[]>(initialProfiles);
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(initialActiveId);
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    (searchParams.get('mode') as ViewMode) || initialViewMode
-  );
-  const [scoredSports, setScoredSports] = useState<ScoredSport[]>([]);
-  const [weights, setWeights] = useState<ScoringWeights>(loadWeights());
-  const [compareList, setCompareList] = useState(loadCompareList());
+  // React Query hooks for data fetching
+  const { data: profiles = [], isLoading: profilesLoading } = useProfiles();
+  const { data: weights, isLoading: weightsLoading } = useWeights();
+  const { data: compareList = [] } = useCompareList();
+  
+  // Mutations
+  const saveProfileMutation = useSaveProfile();
+  const deleteProfileMutation = useDeleteProfile();
+  const saveWeightsMutation = useSaveWeights();
+  const addToCompareMutation = useAddToCompare();
+  const removeFromCompareMutation = useRemoveFromCompare();
+  const clearCompareMutation = useClearCompare();
+
+  // State management for UI
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('results');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [sortOption, setSortOption] = useState<SortOption>('score');
   const [selectedSport, setSelectedSport] = useState<ScoredSport | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterMinAge, setFilterMinAge] = useState<number | null>(null);
   const [filterMaxAge, setFilterMaxAge] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
-  // Sync active profile ID
+  // Initialize active profile ID from profiles
+  useEffect(() => {
+    if (profiles.length > 0 && !activeProfileId) {
+      const firstProfile = profiles[0];
+      setActiveProfileIdState(firstProfile.id);
+    }
+  }, [profiles, activeProfileId]);
+
+  // Get active profile
   const activeProfile = useMemo(
-    () => profiles.find((p) => p.id === activeProfileId),
+    () => profiles.find((p) => p.id === activeProfileId) || null,
     [profiles, activeProfileId]
   );
 
-  // Score sports when profile or weights change
-  useEffect(() => {
-    if (!activeProfile) {
-      setScoredSports([]);
-      return;
-    }
-
-    setIsLoading(true);
-    setTimeout(() => {
-      setScoredSports(scoreAllSports(activeProfile, weights));
-      setIsLoading(false);
-    }, 0);
-  }, [activeProfile, weights]);
+  // Get scored sports using React Query
+  const { data: scoredSports = [], isLoading: scoredSportsLoading } = useScoredSports(
+    activeProfile,
+    weights || null
+  );
 
   // Filter and sort sports
   const filteredAndSortedSports = useMemo(() => {
@@ -137,34 +141,37 @@ function ResultsContent() {
   // Handle profile changes
   const handleAddProfile = useCallback((profile: ChildProfile) => {
     const newProfile = { ...profile, id: Date.now().toString() };
-    const updated = [...profiles, newProfile];
-    setProfiles(updated);
-    saveProfile(newProfile);
-    setActiveProfileIdState(newProfile.id);
-    setActiveProfileId(newProfile.id);
-    setViewMode('results');
-    success(`Profile "${profile.name}" created!`);
-  }, [profiles, success]);
+    saveProfileMutation.mutate(newProfile, {
+      onSuccess: () => {
+        setActiveProfileIdState(newProfile.id);
+        setActiveProfileId(newProfile.id);
+        setViewMode('results');
+        success(`Profile "${profile.name}" created!`);
+      },
+    });
+  }, [saveProfileMutation, success]);
 
   const handleUpdateProfile = useCallback((updated: ChildProfile) => {
-    setProfiles((prev) =>
-      prev.map((p) => (p.id === updated.id ? updated : p))
-    );
-    saveProfile(updated);
-    success(`Profile "${updated.name}" updated!`);
-  }, [success]);
+    saveProfileMutation.mutate(updated, {
+      onSuccess: () => {
+        success(`Profile "${updated.name}" updated!`);
+      },
+    });
+  }, [saveProfileMutation, success]);
 
   const handleDeleteProfile = useCallback((id: string) => {
-    deleteProfile(id);
-    const newProfiles = profiles.filter((p) => p.id !== id);
-    setProfiles(newProfiles);
-    if (activeProfileId === id) {
-      const nextId = newProfiles[0]?.id || null;
-      setActiveProfileIdState(nextId);
-      setActiveProfileId(nextId);
-    }
-    success('Profile deleted');
-  }, [profiles, activeProfileId, success]);
+    deleteProfileMutation.mutate(id, {
+      onSuccess: () => {
+        if (activeProfileId === id) {
+          const nextProfile = profiles.find((p) => p.id !== id);
+          const nextId = nextProfile?.id || null;
+          setActiveProfileIdState(nextId);
+          setActiveProfileId(nextId);
+        }
+        success('Profile deleted');
+      },
+    });
+  }, [deleteProfileMutation, activeProfileId, profiles, success]);
 
   const handleSelectProfile = useCallback((id: string) => {
     setActiveProfileIdState(id);
@@ -174,26 +181,29 @@ function ResultsContent() {
 
   // Handle weight changes
   const handleWeightsChange = useCallback((updated: ScoringWeights) => {
-    setWeights(updated);
-    saveWeights(updated);
-  }, []);
+    saveWeightsMutation.mutate(updated, {
+      onSuccess: () => {
+        success('Weights updated');
+      },
+    });
+  }, [saveWeightsMutation, success]);
 
   // Handle compare mode
   const handleAddToCompare = useCallback((sport: ScoredSport) => {
-    addToCompare(sport.sport.id);
-    setCompareList((prev) => [...new Set([...prev, sport.sport.id])]);
-    success('Added to comparison');
-  }, [success]);
+    addToCompareMutation.mutate(sport.sport.id, {
+      onSuccess: () => {
+        success('Added to comparison');
+      },
+    });
+  }, [addToCompareMutation, success]);
 
   const handleRemoveFromCompare = useCallback((sportId: string) => {
-    removeFromCompare(sportId);
-    setCompareList((prev) => prev.filter((id) => id !== sportId));
-  }, []);
+    removeFromCompareMutation.mutate(sportId);
+  }, [removeFromCompareMutation]);
 
   const handleClearCompare = useCallback(() => {
-    clearCompare();
-    setCompareList([]);
-  }, []);
+    clearCompareMutation.mutate();
+  }, [clearCompareMutation]);
 
   const compareSports = useMemo(
     () => scoredSports.filter((s) => compareList.includes(s.sport.id)),
