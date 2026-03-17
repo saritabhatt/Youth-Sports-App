@@ -89,7 +89,7 @@ export const useAddToCompare = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (sportId: string) => {
+    mutationFn: async (sportId: string) => {
       return addToCompare(sportId);
     },
     onSuccess: () => {
@@ -105,7 +105,7 @@ export const useRemoveFromCompare = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (sportId: string) => {
+    mutationFn: async (sportId: string) => {
       return removeFromCompare(sportId);
     },
     onSuccess: () => {
@@ -121,7 +121,7 @@ export const useClearCompare = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       clearCompare();
       return [];
     },

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import ChildProfileForm from '../components/ChildProfileForm';
@@ -60,7 +61,6 @@ function ResultsContent() {
   const [sortBy, setSortBy] = useState<SortOption>('score');
   const [selectedSport, setSelectedSport] = useState<ScoredSport | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showCompare, setShowCompare] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -100,7 +100,7 @@ function ResultsContent() {
       filtered = filtered.filter(
         (s) =>
           s.sport.name.toLowerCase().includes(search) ||
-          s.sport.description.toLowerCase().includes(search)
+          s.sport.category.toLowerCase().includes(search)
       );
     }
 
@@ -274,6 +274,9 @@ function ResultsContent() {
                     profiles={profiles}
                     activeProfileId={activeId!}
                     onSelect={handleSelectProfile}
+                    onEdit={() => setViewMode('setup')}
+                    onDelete={handleDeleteProfile}
+                    onCreateNew={() => setViewMode('setup')}
                   />
 
                   {compareSports.length > 0 && (
