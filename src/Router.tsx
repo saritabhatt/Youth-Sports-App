@@ -6,6 +6,7 @@ import { Sport101 } from './pages/Sport101';
 import { BudgetPlanner } from './pages/BudgetPlanner';
 import { ProgramsDirectory } from './pages/ProgramsDirectory';
 import { TrialTracker } from './pages/TrialTracker';
+import { Resources } from './pages/Resources';
 
 export function Router() {
   return (
@@ -18,6 +19,7 @@ export function Router() {
         <Route path="/budget" element={<BudgetPlanner />} />
         <Route path="/programs" element={<ProgramsDirectory />} />
         <Route path="/trials" element={<TrialTracker />} />
+        <Route path="/resources" element={<Resources />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

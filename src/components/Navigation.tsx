@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Home, BookOpen, DollarSign, MapPin, CheckSquare } from 'lucide-react';
+import { Home, BookOpen, DollarSign, MapPin, CheckSquare, Lightbulb } from 'lucide-react';
 
 export function Navigation() {
   return (
@@ -38,6 +38,15 @@ export function Navigation() {
       >
         <MapPin className="w-5 h-5 transition-transform group-hover:scale-110" />
         <span className="hidden sm:inline">Programs</span>
+      </Link>
+
+      <Link
+        to="/resources"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 hover-lift text-slate-600 dark:text-slate-400 hover:text-yellow-600 dark:hover:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 group"
+        title="Resources"
+      >
+        <Lightbulb className="w-5 h-5 transition-transform group-hover:scale-110" />
+        <span className="hidden sm:inline">Resources</span>
       </Link>
 
       <Link
