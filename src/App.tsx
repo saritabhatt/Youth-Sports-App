@@ -7,6 +7,7 @@ import ProfileSelector from './components/ProfileSelector';
 import CompareMode from './components/CompareMode';
 import ExportMenu from './components/ExportMenu';
 import { ToastContainer, useToast } from './components/Toast';
+import { useDebounce } from './utils/useDebounce';
 import { 
   ChildProfile, 
   ScoringWeights, 
@@ -64,6 +65,7 @@ export default function App() {
 
   // Search and sort
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [sortBy, setSortBy] = useState<SortOption>('score');
 
   // Get active profile
@@ -81,9 +83,9 @@ export default function App() {
   const filteredSports = useMemo(() => {
     let filtered = scoredSports;
 
-    // Apply search
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    // Apply search (using debounced query to reduce renders)
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase();
       filtered = filtered.filter(s =>
         s.sport.name.toLowerCase().includes(query) ||
         s.sport.category.toLowerCase().includes(query)
@@ -118,7 +120,7 @@ export default function App() {
     }
 
     return filtered;
-  }, [scoredSports, categoryFilter, showTopOnly, searchQuery, sortBy]);
+  }, [scoredSports, categoryFilter, showTopOnly, debouncedSearchQuery, sortBy]);
 
   // Save weights when changed
   useEffect(() => {
@@ -483,7 +485,7 @@ export default function App() {
                   {categoryFilter === 'all' ? 'All Sports' : SPORT_CATEGORIES[categoryFilter].name}
                 </h2>
                 <p className="text-sm text-slate-500">
-                  {filteredSports.length} sports{searchQuery && ` matching "${searchQuery}"`} ranked for {profile?.name}
+                  {filteredSports.length} sports{debouncedSearchQuery && ` matching "${debouncedSearchQuery}"`} ranked for {profile?.name}
                 </p>
               </div>
 
@@ -525,8 +527,8 @@ export default function App() {
                 </div>
                 <h3 className="text-lg font-semibold text-slate-800 mb-2">No sports found</h3>
                 <p className="text-slate-500 mb-4 max-w-sm mx-auto">
-                  {searchQuery
-                    ? `No sports match "${searchQuery}". Try a different search term.`
+                  {debouncedSearchQuery
+                    ? `No sports match "${debouncedSearchQuery}". Try a different search term.`
                     : 'Try adjusting your filters or selecting a different category.'}
                 </p>
                 <div className="flex justify-center gap-3">
