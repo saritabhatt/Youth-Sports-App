@@ -1,26 +1,26 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import ChildProfileForm from './components/ChildProfileForm';
-import ScoringWeightsSliders from './components/ScoringWeightsSliders';
-import SportCard from './components/SportCard';
-import SportDetailModal from './components/SportDetailModal';
-import ProfileSelector from './components/ProfileSelector';
-import CompareMode from './components/CompareMode';
-import ExportMenu from './components/ExportMenu';
-import { ToastContainer, useToast } from './components/Toast';
-import { ThemeToggle } from './components/ThemeToggle';
-import { useDebounce } from './utils/useDebounce';
+import ChildProfileForm from '../components/ChildProfileForm';
+import ScoringWeightsSliders from '../components/ScoringWeightsSliders';
+import SportCard from '../components/SportCard';
+import SportDetailModal from '../components/SportDetailModal';
+import ProfileSelector from '../components/ProfileSelector';
+import CompareMode from '../components/CompareMode';
+import ExportMenu from '../components/ExportMenu';
+import { ToastContainer, useToast } from '../components/Toast';
+import { ThemeToggle } from '../components/ThemeToggle';
+import { useDebounce } from '../utils/useDebounce';
 import { 
   ChildProfile, 
   ScoringWeights, 
   ScoredSport,
   scoreAllSports,
-} from './data/scoringEngine';
+} from '../data/scoringEngine';
 import { 
   SPORT_CATEGORIES, 
   SportCategory, 
   getRegionFromZip, 
   REGION_NAMES 
-} from './data/sportsData';
+} from '../data/sportsData';
 import {
   loadProfiles,
   saveProfile,
@@ -33,7 +33,7 @@ import {
   addToCompare,
   removeFromCompare,
   clearCompare
-} from './data/storage';
+} from '../data/storage';
 
 type ViewMode = 'setup' | 'results';
 type FilterCategory = SportCategory | 'all';
