@@ -38,7 +38,6 @@ export function Sport101() {
           </Button>
         </Link>
 
-        {/* Header */}
         <div className="mb-8">
           <div className="text-6xl mb-4">{content.emoji}</div>
           <h1 className="text-4xl font-bold mb-2">{content.name}</h1>
@@ -60,7 +59,6 @@ export function Sport101() {
           </div>
         </div>
 
-        {/* Quick Rundown */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Quick Rundown</CardTitle>
@@ -87,7 +85,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* How It Works */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>How It Works</CardTitle>
@@ -97,7 +94,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Key Skills */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -117,7 +113,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Equipment */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Equipment You'll Need</CardTitle>
@@ -134,7 +129,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Season Structure */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>The Season Looks Like</CardTitle>
@@ -144,7 +138,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Common Injuries */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Common Injuries & Prevention</CardTitle>
@@ -162,7 +155,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Cost Breakdown */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -188,7 +180,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Coach's Perspective */}
         <Card className="mb-6 bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -204,7 +195,6 @@ export function Sport101() {
           </CardContent>
         </Card>
 
-        {/* Video */}
         {content.videoUrl && (
           <Card className="mb-6">
             <CardHeader>
@@ -226,7 +216,6 @@ export function Sport101() {
           </Card>
         )}
 
-        {/* College Opportunity */}
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>College Opportunity</CardTitle>
