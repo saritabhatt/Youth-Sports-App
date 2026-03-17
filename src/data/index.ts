@@ -1,9 +1,9 @@
 // Central export file for all sports data and programs
 
 export * from './sportsData';
-export * from './localProgramsData';
 
-// Re-export key utilities
+// Re-export key utilities from localProgramsData (excluding Sport type which conflicts)
+export type { LocalProgram, OrganizationType } from './localProgramsData';
 export {
   searchPrograms,
   getProgramsByRegion,

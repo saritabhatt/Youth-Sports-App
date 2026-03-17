@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { SPORTS_DATA } from '../data/sportsData';
+import { SPORTS_DATA, SPORT_CATEGORIES } from '../data/sportsData';
 import { ArrowLeft, DollarSign, TrendingUp, PieChart as PieChartIcon } from 'lucide-react';
 
 export function BudgetPlanner() {
@@ -37,10 +37,11 @@ export function BudgetPlanner() {
   const sportDetails = selectedSports.map((sport) => {
     const data = SPORTS_DATA.find((s) => s.id === sport.id);
     const costs = costMap[sport.id] || { recreational: 0, competitive: 0 };
+    const categoryData = data ? SPORT_CATEGORIES[data.category as keyof typeof SPORT_CATEGORIES] : null;
     return {
       id: sport.id,
       name: data?.name || sport.id,
-      emoji: data?.emoji || '🏆',
+      emoji: categoryData?.icon || '🏆',
       intensity: sport.intensity,
       cost: costs[sport.intensity] || 0,
     };
@@ -119,6 +120,7 @@ export function BudgetPlanner() {
                 {SPORTS_DATA.slice(0, 8).map((sport) => {
                   const selected = selectedSports.find((s) => s.id === sport.id);
                   const costs = costMap[sport.id] || { recreational: 0, competitive: 0 };
+                  const categoryData = SPORT_CATEGORIES[sport.category as keyof typeof SPORT_CATEGORIES];
                   
                   return (
                     <div key={sport.id} className="border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:border-emerald-400 dark:hover:border-emerald-600 transition-colors">
@@ -131,7 +133,7 @@ export function BudgetPlanner() {
                           className="w-5 h-5 rounded cursor-pointer"
                         />
                         <label htmlFor={sport.id} className="flex-1 cursor-pointer flex items-center gap-2">
-                          <span className="text-2xl">{sport.emoji}</span>
+                          <span className="text-2xl">{categoryData?.icon || '🏆'}</span>
                           <span className="font-semibold text-slate-900 dark:text-white">{sport.name}</span>
                         </label>
                         
@@ -177,30 +179,34 @@ export function BudgetPlanner() {
                 </h3>
 
                 <div className="space-y-4">
-                  {sportDetails.map((sport) => (
-                    <div key={sport.id} className="group">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{sport.emoji}</span>
-                          <span className="font-semibold text-slate-900 dark:text-white text-sm">{sport.name}</span>
+                  {sportDetails.map((sport) => {
+                    const sportData = SPORTS_DATA.find((s) => s.id === sport.id);
+                    const categoryData = SPORT_CATEGORIES[sportData?.category as keyof typeof SPORT_CATEGORIES || 'general'];
+                    return (
+                      <div key={sport.id} className="group">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{categoryData?.icon || '🏆'}</span>
+                            <span className="font-semibold text-slate-900 dark:text-white text-sm">{sport.name}</span>
+                          </div>
+                          <span className="font-bold text-slate-900 dark:text-white text-sm">
+                            ${sport.cost.toLocaleString()}
+                          </span>
                         </div>
-                        <span className="font-bold text-slate-900 dark:text-white text-sm">
-                          ${sport.cost.toLocaleString()}
-                        </span>
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all group-hover:from-emerald-600 group-hover:to-teal-600"
+                            style={{
+                              width: `${(sport.cost / maxCost) * 100}%`,
+                            }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {sport.intensity === 'recreational' ? '🟦 Recreational' : '🟪 Competitive'}
+                        </div>
                       </div>
-                      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all group-hover:from-emerald-600 group-hover:to-teal-600"
-                          style={{
-                            width: `${(sport.cost / maxCost) * 100}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        {sport.intensity === 'recreational' ? '🟦 Recreational' : '🟪 Competitive'}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700">

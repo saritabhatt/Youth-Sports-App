@@ -126,7 +126,7 @@ export function ProgramsDirectory() {
               All Programs
             </button>
             {sports.map((sport) => {
-              const sportData = SPORTS_DATA.find((s) => s.name === sport);
+              const programForSport = programs.find((p) => p.sport === sport);
               return (
                 <button
                   key={sport}
@@ -137,7 +137,7 @@ export function ProgramsDirectory() {
                       : 'bg-white/80 dark:bg-gray-800/50 text-slate-900 dark:text-white border border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-gray-800'
                   }`}
                 >
-                  <span className="text-xl">{sportData?.emoji || '🏆'}</span>
+                  <span className="text-xl">{programForSport?.emoji || '🏆'}</span>
                   {sport}
                 </button>
               );
