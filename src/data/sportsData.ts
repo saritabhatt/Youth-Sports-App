@@ -461,14 +461,14 @@ export const SPORTS_DATA: Sport[] = [
       { region: "pacific-northwest", competitionLevel: 4, programAvailability: 4 }
     ],
     costRange: {
-      entryLevel: { min: 100, max: 400 },
-      competitive: { min: 2000, max: 5000 }
+      entryLevel: { min: 300, max: 700 },
+      competitive: { min: 1500, max: 4000 }
     },
     idealStartAge: { min: 4, max: 7 },
     collegeOpportunity: 4,
     lifespanValue: 4,
     physicalDemands: { cardio: 5, strength: 3, coordination: 4, flexibility: 3 },
-    notes: "Most popular youth sport globally. Excellent for cardiovascular fitness and teamwork."
+    notes: "Most popular youth sport (24.1% participation rate). 5M youth nationwide. Top 3 sport globally. 2024 avg cost: $1,188/year for organized play."
   },
   {
     id: "basketball",
@@ -503,14 +503,14 @@ export const SPORTS_DATA: Sport[] = [
       { region: "mountain-west", competitionLevel: 3, programAvailability: 3 }
     ],
     costRange: {
-      entryLevel: { min: 50, max: 200 },
-      competitive: { min: 1500, max: 4000 }
+      entryLevel: { min: 250, max: 600 },
+      competitive: { min: 1200, max: 3000 }
     },
     idealStartAge: { min: 6, max: 9 },
     collegeOpportunity: 4,
     lifespanValue: 4,
     physicalDemands: { cardio: 5, strength: 4, coordination: 5, flexibility: 3 },
-    notes: "Height is a significant advantage. Excellent for coordination and teamwork."
+    notes: "#1 youth sport (41.9% participation, 7.9M kids). 2024 avg: $1,002/year. Height is significant advantage. NBA/college pathways strongest in US."
   },
   {
     id: "football",
