@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { ScoredSport } from '../data/scoringEngine';
 import { SPORT_CATEGORIES, REGION_NAMES, RegionType, SportCategory } from '../data/sportsData';
+import { getProgramsBySportName } from '../data/localProgramsData';
+import { MapPin, Globe, Phone } from 'lucide-react';
 
 interface SportDetailModalProps {
   scoredSport: ScoredSport;
@@ -14,6 +16,12 @@ export default function SportDetailModal({ scoredSport, region, onClose }: Sport
   const modalRef = useRef<HTMLDivElement>(null);
 
   const regionalComp = sport.regionalCompetition.find(rc => rc.region === region);
+  
+  // Get local programs for this sport
+  const localPrograms = useMemo(
+    () => getProgramsBySportName(sport.name, region as 'santa-barbara' | 'los-angeles' | 'ventura' | 'san-luis-obispo' | 'kern-county' | 'inyo-county'),
+    [sport.name, region]
+  );
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -270,6 +278,77 @@ export default function SportDetailModal({ scoredSport, region, onClose }: Sport
                  sport.lifespanValue >= 2 ? 'Peak in youth/young adult' : 'Youth-focused'}
               </div>
             </div>
+          </div>
+
+          {/* Local Organizations */}
+          <div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-emerald-600" />
+              Local Programs & Organizations
+            </h3>
+            {localPrograms.length > 0 ? (
+              <div className="space-y-3">
+                {localPrograms.slice(0, 5).map((program) => (
+                  <div key={program.id} className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-semibold text-slate-900">{program.name}</h4>
+                        <p className="text-sm text-slate-600">{program.organization}</p>
+                      </div>
+                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+                        {program.programType}
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-3">{program.description}</p>
+                    <div className="space-y-2 text-sm">
+                      {program.location && (
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <MapPin className="w-4 h-4 text-emerald-600" />
+                          {program.location}
+                        </div>
+                      )}
+                      {program.contact?.phone && (
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Phone className="w-4 h-4 text-emerald-600" />
+                          {program.contact.phone}
+                        </div>
+                      )}
+                      {program.contact?.website && (
+                        <a 
+                          href={program.contact.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
+                        >
+                          <Globe className="w-4 h-4" />
+                          Visit Website
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {localPrograms.length > 5 && (
+                  <div className="p-3 bg-blue-50 rounded-xl text-center">
+                    <p className="text-sm text-blue-700 font-medium">
+                      {localPrograms.length - 5} more programs available
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 text-center">
+                <p className="text-slate-600 mb-4">No local programs found in our database.</p>
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(sport.name + ' programs near Santa Barbara CA')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"
+                >
+                  <Globe className="w-4 h-4" />
+                  Search Google
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Notes */}

@@ -1926,3 +1926,9 @@ export function getProgramStats() {
     }
   };
 }
+
+export function getProgramsBySportName(sportName: string, region: Region = 'santa-barbara'): LocalProgram[] {
+  return LOCAL_PROGRAMS.filter(
+    p => p.region === region && p.sport.toLowerCase().includes(sportName.toLowerCase())
+  );
+}
