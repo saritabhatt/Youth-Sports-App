@@ -1,16 +1,13 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getActiveProfileId, loadProfiles } from '../data/storage';
+import { useMemo } from 'react';
+import { useProfiles } from '../hooks';
+import { getActiveProfileId } from '../data/storage';
 
 export function Home() {
-  const [profileCount, setProfileCount] = useState(0);
-  const [hasActiveProfile, setHasActiveProfile] = useState(false);
-
-  useEffect(() => {
-    const profiles = loadProfiles();
-    setProfileCount(profiles.length);
-    setHasActiveProfile(!!getActiveProfileId());
-  }, []);
+  const { data: profiles = [] } = useProfiles();
+  
+  const profileCount = profiles.length;
+  const hasActiveProfile = useMemo(() => !!getActiveProfileId(), []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">

@@ -1,4 +1,4 @@
-import React, { ReactNode, Component, ErrorInfo } from 'react';
+import { ReactNode, Component, ErrorInfo } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -53,7 +53,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-slate-600 text-center mb-4">
               We encountered an unexpected error. Please try refreshing the page.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.MODE === 'development' && this.state.error && (
               <details className="text-xs text-slate-500 bg-slate-50 p-3 rounded mb-4 overflow-auto max-h-32">
                 <summary className="font-semibold cursor-pointer">Error details</summary>
                 <pre className="mt-2 whitespace-pre-wrap break-words">
