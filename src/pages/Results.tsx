@@ -15,79 +15,80 @@ import {
   ChildProfile,
   ScoringWeights,
   ScoredSport,
-  scoreAllSports,
 } from '../data/scoringEngine';
 import {
   SPORT_CATEGORIES,
   SportCategory,
   getRegionFromZip,
-  REGION_NAMES,
 } from '../data/sportsData';
 import {
-  loadProfiles,
-  saveProfile,
-  deleteProfile,
-  getActiveProfileId,
   setActiveProfileId,
-  loadWeights,
-  saveWeights,
-  loadCompareList,
-  addToCompare,
-  removeFromCompare,
-  clearCompare,
 } from '../data/storage';
+import {
+  useProfiles,
+  useSaveProfile,
+  useDeleteProfile,
+  useWeights,
+  useSaveWeights,
+  useScoredSports,
+  useCompareList,
+  useAddToCompare,
+  useRemoveFromCompare,
+  useClearCompare,
+} from '../hooks';
 
 type ViewMode = 'setup' | 'results';
 type FilterCategory = SportCategory | 'all';
 type SortOption = 'score' | 'name' | 'age-match' | 'cost';
 
-// Load initial state once outside component to avoid duplicate calls
-const initialProfiles = loadProfiles();
-const initialActiveId = getActiveProfileId();
-const initialViewMode: ViewMode = initialProfiles.length > 0 && initialActiveId ? 'results' : 'setup';
-
 function ResultsContent() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { toasts, removeToast, success } = useToast();
 
-  // State management
-  const [profiles, setProfiles] = useState<ChildProfile[]>(initialProfiles);
-  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(initialActiveId);
-  const [viewMode, setViewMode] = useState<ViewMode>(
-    (searchParams.get('mode') as ViewMode) || initialViewMode
-  );
-  const [scoredSports, setScoredSports] = useState<ScoredSport[]>([]);
-  const [weights, setWeights] = useState<ScoringWeights>(loadWeights());
-  const [compareIds, setCompareIds] = useState<string[]>(loadCompareList());
+  // React Query hooks for data fetching
+  const { data: profiles = [], isLoading: profilesLoading } = useProfiles();
+  const { data: weights, isLoading: weightsLoading } = useWeights();
+  const { data: compareList = [] } = useCompareList();
+  
+  // Mutations
+  const saveProfileMutation = useSaveProfile();
+  const deleteProfileMutation = useDeleteProfile();
+  const saveWeightsMutation = useSaveWeights();
+  const addToCompareMutation = useAddToCompare();
+  const removeFromCompareMutation = useRemoveFromCompare();
+  const clearCompareMutation = useClearCompare();
+
+  // State management for UI
+  const [activeProfileId, setActiveProfileIdState] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('results');
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [sortOption, setSortOption] = useState<SortOption>('score');
   const [selectedSport, setSelectedSport] = useState<ScoredSport | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileToEdit, setProfileToEdit] = useState<ChildProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
-  // Sync active profile
+  // Initialize active profile ID from profiles
+  useEffect(() => {
+    if (profiles.length > 0 && !activeProfileId) {
+      const firstProfile = profiles[0];
+      setActiveProfileIdState(firstProfile.id);
+    }
+  }, [profiles, activeProfileId]);
+
+  // Get active profile
   const activeProfile = useMemo(
-    () => profiles.find((p) => p.id === activeProfileId),
+    () => profiles.find((p) => p.id === activeProfileId) || null,
     [profiles, activeProfileId]
   );
 
-  // Score sports when profile or weights change
-  useEffect(() => {
-    if (!activeProfile) {
-      setScoredSports([]);
-      return;
-    }
-
-    setIsLoading(true);
-    setTimeout(() => {
-      setScoredSports(scoreAllSports(activeProfile, weights));
-      setIsLoading(false);
-    }, 0);
-  }, [activeProfile, weights]);
+  // Get scored sports using React Query
+  const { data: scoredSports = [], isLoading: scoredSportsLoading } = useScoredSports(
+    activeProfile,
+    weights || null
+  );
 
   // Filter and sort sports
   const filteredAndSortedSports = useMemo(() => {
@@ -104,7 +105,7 @@ function ResultsContent() {
       filtered = filtered.filter(
         (s) =>
           s.sport.name.toLowerCase().includes(search) ||
-          s.sport.description.toLowerCase().includes(search)
+          s.sport.notes.toLowerCase().includes(search)
       );
     }
 
@@ -129,20 +130,22 @@ function ResultsContent() {
 
   // Handle profile changes
   const handleProfileCreated = useCallback((profile: ChildProfile) => {
-    const isNew = !profiles.find(p => p.id === profile.id);
-    saveProfile(profile);
-    setProfiles(loadProfiles());
-    setActiveProfileIdState(profile.id);
-    setActiveProfileId(profile.id);
-    setViewMode('results');
-    setIsEditingProfile(false);
-    setProfileToEdit(null);
-    success(isNew ? `Profile created for ${profile.name}` : `Profile updated for ${profile.name}`);
-  }, [profiles, success]);
+    const newProfile = { ...profile, id: profile.id || Date.now().toString() };
+    saveProfileMutation.mutate(newProfile, {
+      onSuccess: () => {
+        setActiveProfileIdState(newProfile.id);
+        setActiveProfileId(newProfile.id);
+        setViewMode('results');
+        setIsEditingProfile(false);
+        setProfileToEdit(null);
+        success(`Profile "${profile.name}" created!`);
+      },
+    });
+  }, [saveProfileMutation, success]);
 
-  const handleSelectProfile = useCallback((profileId: string) => {
-    setActiveProfileIdState(profileId);
-    setActiveProfileId(profileId);
+  const handleSelectProfile = useCallback((id: string) => {
+    setActiveProfileIdState(id);
+    setActiveProfileId(id);
     setViewMode('results');
   }, []);
 
@@ -152,60 +155,69 @@ function ResultsContent() {
     setViewMode('setup');
   }, []);
 
-  const handleDeleteProfile = useCallback((profileId: string) => {
-    deleteProfile(profileId);
-    const updatedProfiles = loadProfiles();
-    setProfiles(updatedProfiles);
-
-    if (activeProfileId === profileId) {
-      const nextId = updatedProfiles[0]?.id || null;
-      setActiveProfileIdState(nextId);
-      setActiveProfileId(nextId);
-    }
-    success('Profile deleted');
-  }, [activeProfileId, success]);
+  const handleDeleteProfile = useCallback((id: string) => {
+    const profileName = profiles.find(p => p.id === id)?.name || 'Profile';
+    deleteProfileMutation.mutate(id, {
+      onSuccess: () => {
+        if (activeProfileId === id) {
+          const nextProfile = profiles.find((p) => p.id !== id);
+          const nextId = nextProfile?.id || null;
+          setActiveProfileIdState(nextId);
+          setActiveProfileId(nextId);
+        }
+        success(`${profileName} deleted`);
+      },
+    });
+  }, [deleteProfileMutation, activeProfileId, profiles, success]);
 
   // Handle weight changes
   const handleWeightsChange = useCallback((updated: ScoringWeights) => {
-    setWeights(updated);
-    saveWeights(updated);
-  }, []);
+    saveWeightsMutation.mutate(updated, {
+      onSuccess: () => {
+        success('Weights updated');
+      },
+    });
+  }, [saveWeightsMutation, success]);
 
   // Handle compare mode
-  const handleToggleCompare = useCallback((sportId: string) => {
-    setCompareIds((prev) => {
-      if (prev.includes(sportId)) {
-        removeFromCompare(sportId);
-        return prev.filter((id) => id !== sportId);
-      } else {
-        if (prev.length < 4) {
-          addToCompare(sportId);
-          success('Added to comparison');
-          return [...prev, sportId];
-        }
-        return prev;
-      }
+  const handleAddToCompare = useCallback((sportId: string) => {
+    addToCompareMutation.mutate(sportId, {
+      onSuccess: () => {
+        success('Added to comparison');
+      },
     });
-  }, [success]);
+  }, [addToCompareMutation, success]);
+
+  const handleRemoveFromCompare = useCallback((sportId: string) => {
+    removeFromCompareMutation.mutate(sportId);
+  }, [removeFromCompareMutation]);
 
   const handleClearCompare = useCallback(() => {
-    clearCompare();
-    setCompareIds([]);
-  }, []);
+    clearCompareMutation.mutate();
+  }, [clearCompareMutation]);
 
   const compareSports = useMemo(
-    () => scoredSports.filter((s) => compareIds.includes(s.sport.id)),
-    [scoredSports, compareIds]
+    () => scoredSports.filter((s) => compareList.includes(s.sport.id)),
+    [scoredSports, compareList]
   );
+
+  // Loading state for initial data fetch
+  if (profilesLoading || weightsLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <LoadingState message="Loading your data..." />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 shadow">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Results</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">The Long Game</h1>
           <ThemeToggle />
         </div>
       </header>
@@ -238,39 +250,66 @@ function ResultsContent() {
         {viewMode === 'setup' ? (
           /* Setup View */
           <div className="space-y-8">
-            {(profiles.length === 0 || isEditingProfile) && (
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  {profileToEdit ? 'Edit Profile' : 'Create Child Profile'}
-                </h2>
-                <ChildProfileForm
-                  onProfileCreated={handleProfileCreated}
-                  existingProfile={profileToEdit}
-                  onCancel={profiles.length > 0 ? () => {
-                    setIsEditingProfile(false);
-                    setProfileToEdit(null);
-                    setViewMode('results');
-                  } : undefined}
-                />
-              </div>
-            )}
+            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                {isEditingProfile && profileToEdit ? 'Edit Profile' : 'Create Profile'}
+              </h2>
+              <ChildProfileForm
+                onProfileCreated={handleProfileCreated}
+                existingProfile={profileToEdit}
+                onCancel={
+                  isEditingProfile
+                    ? () => {
+                        setIsEditingProfile(false);
+                        setProfileToEdit(null);
+                      }
+                    : undefined
+                }
+              />
+            </div>
 
             {profiles.length > 0 && (
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                   Existing Profiles
                 </h2>
-                <ProfileSelector
-                  profiles={profiles}
-                  activeProfileId={activeProfileId!}
-                  onSelect={handleSelectProfile}
-                  onEdit={handleEditProfile}
-                  onDelete={handleDeleteProfile}
-                  onCreateNew={() => {
-                    setProfileToEdit(null);
-                    setIsEditingProfile(true);
-                  }}
-                />
+                <div className="space-y-2">
+                  {profiles.map((profile) => (
+                    <div
+                      key={profile.id}
+                      className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded"
+                    >
+                      <div>
+                        <div className="font-semibold text-gray-900 dark:text-white">
+                          {profile.name}
+                        </div>
+                        <div className="text-sm text-gray-600 dark:text-gray-400">
+                          Age {profile.age}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditProfile(profile)}
+                          className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleSelectProfile(profile.id)}
+                          className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+                        >
+                          Select
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProfile(profile.id)}
+                          className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -279,28 +318,30 @@ function ResultsContent() {
           <>
             {activeProfile ? (
               <div className="space-y-8">
-                {/* Profile selector and comparison */}
+                {/* Profile selector */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                      {activeProfile.name}
-                    </h2>
-                    <button
-                      onClick={() => handleEditProfile(activeProfile)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                    >
-                      Edit Profile
-                    </button>
-                  </div>
+                  <ProfileSelector
+                    profiles={profiles}
+                    activeProfileId={activeProfileId!}
+                    onSelect={handleSelectProfile}
+                    onEdit={handleEditProfile}
+                    onDelete={handleDeleteProfile}
+                    onCreateNew={() => {
+                      setProfileToEdit(null);
+                      setIsEditingProfile(true);
+                      setViewMode('setup');
+                    }}
+                  />
 
-                  {compareIds.length > 0 && (
+                  {compareSports.length > 0 && (
                     <div className="mt-6">
                       <CompareMode
-                        scoredSports={scoredSports}
-                        compareIds={compareIds}
-                        onRemove={handleToggleCompare}
+                        scoredSports={compareSports}
+                        compareIds={compareList}
+                        onRemove={handleRemoveFromCompare}
                         onClear={handleClearCompare}
-                        zipCode={activeProfile.zipCode}
+                        onClose={() => {}}
+                        zipCode={activeProfile?.zipCode}
                       />
                     </div>
                   )}
@@ -308,7 +349,12 @@ function ResultsContent() {
 
                 {/* Weights Adjustment */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
-                  <ScoringWeightsSliders weights={weights} onChange={handleWeightsChange} />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    Customize Priorities
+                  </h3>
+                  {weights && (
+                    <ScoringWeightsSliders weights={weights} onChange={handleWeightsChange} />
+                  )}
                 </div>
 
                 {/* Filters */}
@@ -326,7 +372,7 @@ function ResultsContent() {
                     />
                   </div>
 
-                  <div className="grid md:grid-cols-3 gap-4">
+                  <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         Category
@@ -337,9 +383,9 @@ function ResultsContent() {
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded"
                       >
                         <option value="all">All Categories</option>
-                        {Object.entries(SPORT_CATEGORIES).map(([key]) => (
+                        {Object.entries(SPORT_CATEGORIES).map(([key, { name }]) => (
                           <option key={key} value={key}>
-                            {SPORT_CATEGORIES[key as SportCategory].name}
+                            {name}
                           </option>
                         ))}
                       </select>
@@ -360,17 +406,21 @@ function ResultsContent() {
                         <option value="cost">Cost</option>
                       </select>
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                        Export
-                      </label>
-                      <ExportMenu
-                        profile={activeProfile}
-                        scoredSports={filteredAndSortedSports}
-                      />
-                    </div>
                   </div>
+
+                  {compareList.length > 0 && (
+                    <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
+                      <span className="text-sm text-blue-700 dark:text-blue-200">
+                        {compareList.length} sport{compareList.length !== 1 ? 's' : ''} selected for comparison
+                      </span>
+                      <button
+                        onClick={handleClearCompare}
+                        className="ml-auto text-sm text-blue-600 dark:text-blue-300 hover:underline"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Results */}
@@ -380,25 +430,26 @@ function ResultsContent() {
                   </h2>
 
                   {scoredSportsLoading ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="text-center">
-                        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-2"></div>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm">Calculating scores...</p>
-                      </div>
-                    </div>
+                    <LoadingState message="Calculating scores..." size="large" />
                   ) : filteredAndSortedSports.length > 0 ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {filteredAndSortedSports.map((sport, index) => (
-                        <SportCard
-                          key={sport.sport.id}
-                          scoredSport={sport}
-                          rank={filterCategory === 'all' ? index + 1 : 0}
-                          onViewDetails={() => setSelectedSport(sport)}
-                          isInCompare={compareIds.includes(sport.sport.id)}
-                          onToggleCompare={handleToggleCompare}
-                          canAddToCompare={compareIds.length < 4}
-                          zipCode={activeProfile.zipCode}
-                        />
+                      {filteredAndSortedSports.map((sport) => (
+                        <div key={sport.sport.id}>
+                          <SportCard
+                            scoredSport={sport}
+                            onViewDetails={() => setSelectedSport(sport)}
+                            isInCompare={compareList.includes(sport.sport.id)}
+                            onToggleCompare={() => {
+                              if (compareList.includes(sport.sport.id)) {
+                                handleRemoveFromCompare(sport.sport.id);
+                              } else if (compareList.length < 4) {
+                                handleAddToCompare(sport.sport.id);
+                              }
+                            }}
+                            canAddToCompare={compareList.length < 4}
+                            zipCode={activeProfile?.zipCode}
+                          />
+                        </div>
                       ))}
                     </div>
                   ) : (
@@ -427,10 +478,10 @@ function ResultsContent() {
         )}
 
         {/* Sport Detail Modal */}
-        {selectedSport && activeProfile && (
+        {selectedSport && (
           <SportDetailModal
             scoredSport={selectedSport}
-            region={getRegionFromZip(activeProfile.zipCode) || 'west-coast'}
+            region={activeProfile ? getRegionFromZip(activeProfile.zipCode) : 'west-coast'}
             onClose={() => setSelectedSport(null)}
           />
         )}
@@ -441,7 +492,13 @@ function ResultsContent() {
 
 export function Results() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <LoadingState message="Loading..." />
+        </div>
+      }
+    >
       <ResultsContent />
     </Suspense>
   );

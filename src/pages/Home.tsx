@@ -1,26 +1,16 @@
 import { Link } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { getActiveProfileId, loadProfiles } from '../data/storage';
+import { LoadingState } from '../components/LoadingState';
+import { useProfiles } from '../hooks';
 
 export function Home() {
-  const [profileCount, setProfileCount] = useState(0);
-  const [hasActiveProfile, setHasActiveProfile] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const profiles = loadProfiles();
-    setProfileCount(profiles.length);
-    const activeId = getActiveProfileId();
-    setHasActiveProfile(!!activeId);
-    setIsLoading(false);
-  }, []);
+  const { data: profiles = [], isLoading } = useProfiles();
+  const profileCount = profiles.length;
+  const hasActiveProfile = profileCount > 0;
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        </div>
+        <LoadingState message="Loading..." />
       </div>
     );
   }
