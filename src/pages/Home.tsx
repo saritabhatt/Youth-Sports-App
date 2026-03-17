@@ -58,6 +58,24 @@ export function Home() {
               </Link>
             )}
             <Link
+              to="/trials"
+              className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-center transition"
+            >
+              📋 Trial Tracker
+            </Link>
+            <Link
+              to="/budget"
+              className="block w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-center transition"
+            >
+              💰 Budget Planner
+            </Link>
+            <Link
+              to="/programs"
+              className="block w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg text-center transition"
+            >
+              🏢 Programs Directory
+            </Link>
+            <Link
               to="/about"
               className="block w-full bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-bold py-3 px-6 rounded-lg text-center transition"
             >

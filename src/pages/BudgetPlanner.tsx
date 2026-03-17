@@ -1,176 +1,201 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Checkbox } from '../components/ui/checkbox';
+import { ArrowLeft, DollarSign, TrendingDown } from 'lucide-react';
 import { SPORTS_DATA } from '../data/sportsData';
 
-/**
- * Budget Planner - Calculate multi-sport yearly costs
- * Route: /budget-planner
- */
-export default function BudgetPlanner() {
-  const [selectedSports, setSelectedSports] = useState<Array<{ id: string; intensity: 'recreational' | 'competitive' }>>([]);
-  const [showResults, setShowResults] = useState(false);
+export function BudgetPlanner() {
+  const [selectedSports, setSelectedSports] = useState<{ id: string; intensity: 'recreational' | 'competitive' }[]>([]);
 
-  const toggleSport = (sportId: string, intensity: 'recreational' | 'competitive' = 'recreational') => {
-    const exists = selectedSports.find(s => s.id === sportId);
-    if (exists) {
-      setSelectedSports(selectedSports.filter(s => s.id !== sportId));
-    } else {
-      if (selectedSports.length < 4) {
-        setSelectedSports([...selectedSports, { id: sportId, intensity }]);
-      }
-    }
+  // Cost mapping for different sport intensity levels
+  const costMap: Record<string, Record<'recreational' | 'competitive', number>> = {
+    soccer: { recreational: 300, competitive: 3000 },
+    basketball: { recreational: 250, competitive: 2000 },
+    baseball: { recreational: 280, competitive: 2500 },
+    swimming: { recreational: 1500, competitive: 3500 },
+    tennis: { recreational: 1500, competitive: 4000 },
+    gymnastics: { recreational: 1000, competitive: 4500 },
+    volleyball: { recreational: 250, competitive: 2500 },
+    track: { recreational: 200, competitive: 1500 },
+    lacrosse: { recreational: 400, competitive: 3000 },
+    football: { recreational: 300, competitive: 2000 },
   };
 
-  const calculateTotalCost = () => {
-    let total = 0;
-    selectedSports.forEach(({ id, intensity }) => {
-      const sport = SPORTS_DATA.find(s => s.id === id);
-      if (sport) {
-        const costRange = intensity === 'recreational' ? sport.costRange?.entryLevel : sport.costRange?.competitive;
-        if (costRange) {
-          total += (costRange.min + costRange.max) / 2;
-        }
+  const toggleSport = (sportId: string) => {
+    setSelectedSports((prev) => {
+      const exists = prev.find((s) => s.id === sportId);
+      if (exists) {
+        return prev.filter((s) => s.id !== sportId);
+      } else {
+        return [...prev, { id: sportId, intensity: 'recreational' }];
       }
     });
-    return Math.round(total);
   };
 
-  const monthlyBreakdown = () => {
-    // Simplified - would need actual season dates from sports data
-    return [
-      { month: 'Jan-Mar', cost: Math.round(calculateTotalCost() / 4) },
-      { month: 'Apr-Jun', cost: Math.round(calculateTotalCost() / 4) },
-      { month: 'Jul-Sep', cost: Math.round(calculateTotalCost() / 4) },
-      { month: 'Oct-Dec', cost: Math.round(calculateTotalCost() / 4) },
-    ];
+  const toggleIntensity = (sportId: string) => {
+    setSelectedSports((prev) =>
+      prev.map((s) =>
+        s.id === sportId
+          ? { ...s, intensity: s.intensity === 'recreational' ? 'competitive' : 'recreational' }
+          : s
+      )
+    );
   };
 
-  const totalCost = calculateTotalCost();
+  const yearlyTotal = selectedSports.reduce((total, sport) => {
+    const costs = costMap[sport.id] || { recreational: 0, competitive: 0 };
+    return total + (costs[sport.intensity] || 0);
+  }, 0);
+
+  const monthlyTotal = yearlyTotal / 12;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      {/* Header */}
-      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-white">Budget Planner</h1>
-          <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Calculate total yearly sports costs for your family
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white dark:bg-gray-950 p-6">
+      <div className="max-w-4xl mx-auto">
+        <Link to="/">
+          <Button variant="outline" size="sm" className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back
+          </Button>
+        </Link>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
+        <h1 className="text-4xl font-bold mb-2">Budget Calculator</h1>
+        <p className="text-gray-600 dark:text-gray-400 mb-8">
+          Select sports to see the total yearly cost and monthly breakdown.
+        </p>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sport Selection */}
-          <div className="lg:col-span-1">
-            <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-4">
-                Select Sports ({selectedSports.length}/4)
-              </h2>
-
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {SPORTS_DATA.map(sport => {
-                  const isSelected = selectedSports.some(s => s.id === sport.id);
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Select Sports</CardTitle>
+                <CardDescription>Choose which sports your child is interested in</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {SPORTS_DATA.slice(0, 10).map((sport) => {
+                  const selected = selectedSports.find((s) => s.id === sport.id);
                   return (
-                    <button
-                      key={sport.id}
-                      onClick={() => toggleSport(sport.id)}
-                      disabled={!isSelected && selectedSports.length >= 4}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                        isSelected
-                          ? 'bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-medium'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
-                      }`}
-                    >
-                      {sport.name}
-                    </button>
+                    <div key={sport.id} className="flex items-start gap-4 p-3 border rounded-lg">
+                      <Checkbox
+                        checked={!!selected}
+                        onCheckedChange={() => toggleSport(sport.id)}
+                        className="mt-1"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold">{sport.name}</h3>
+                        {selected && (
+                          <div className="mt-2 space-y-2">
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="radio"
+                                name={`${sport.id}-intensity`}
+                                value="recreational"
+                                checked={selected.intensity === 'recreational'}
+                                onChange={() => toggleIntensity(sport.id)}
+                              />
+                              Recreational (${costMap[sport.id]?.recreational || 0}/year)
+                            </label>
+                            <label className="flex items-center gap-2 text-sm">
+                              <input
+                                type="radio"
+                                name={`${sport.id}-intensity`}
+                                value="competitive"
+                                checked={selected.intensity === 'competitive'}
+                                onChange={() => toggleIntensity(sport.id)}
+                              />
+                              Competitive (${costMap[sport.id]?.competitive || 0}/year)
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   );
                 })}
-              </div>
-
-              {selectedSports.length > 0 && (
-                <button
-                  onClick={() => {
-                    setSelectedSports([]);
-                    setShowResults(false);
-                  }}
-                  className="w-full mt-4 px-3 py-2 text-sm bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600"
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Results */}
-          <div className="lg:col-span-2">
-            {selectedSports.length === 0 ? (
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-8 text-center">
-                <p className="text-slate-600 dark:text-slate-400">
-                  Select up to 4 sports to see the total yearly cost
+          {/* Cost Summary */}
+          <div className="space-y-4">
+            {/* Yearly Cost */}
+            <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Yearly Cost
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
+                  ${yearlyTotal.toLocaleString()}
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  ${monthlyTotal.toFixed(2)} per month on average
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Total Cost Card */}
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900 dark:to-emerald-800 rounded-lg border border-emerald-200 dark:border-emerald-700 p-6">
-                  <p className="text-emerald-700 dark:text-emerald-300 text-sm font-medium mb-2">YEARLY TOTAL</p>
-                  <p className="text-5xl font-bold text-emerald-700 dark:text-emerald-200">
-                    ${totalCost.toLocaleString()}
-                  </p>
-                  <p className="text-emerald-600 dark:text-emerald-400 text-sm mt-2">
-                    {selectedSports.length} sport{selectedSports.length !== 1 ? 's' : ''} selected
-                  </p>
-                </div>
+              </CardContent>
+            </Card>
 
-                {/* Monthly Breakdown */}
-                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Monthly Breakdown</h3>
-                  <div className="space-y-3">
-                    {monthlyBreakdown().map((month, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-slate-600 dark:text-slate-400">{month.month}</span>
-                        <div className="flex-1 ml-4">
-                          <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full">
-                            <div
-                              className="h-2 bg-emerald-500 rounded-full"
-                              style={{ width: `${(month.cost / (totalCost / 4)) * 100}%` }}
-                            />
-                          </div>
+            {/* Selected Sports Summary */}
+            {selectedSports.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Selected Sports</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {selectedSports.map((sport) => {
+                    const sportData = SPORTS_DATA.find((s) => s.id === sport.id);
+                    const cost = costMap[sport.id]?.[sport.intensity] || 0;
+                    return (
+                      <div key={sport.id} className="flex justify-between text-sm">
+                        <div>
+                          <p className="font-semibold">{sportData?.name}</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400">{sport.intensity}</p>
                         </div>
-                        <span className="ml-4 font-bold text-slate-800 dark:text-white text-right min-w-16">
-                          ${month.cost}
-                        </span>
+                        <p className="font-semibold">${cost}</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Selected Sports Detail */}
-                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6">
-                  <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4">Selected Sports</h3>
-                  <div className="space-y-3">
-                    {selectedSports.map(({ id, intensity }) => {
-                      const sport = SPORTS_DATA.find(s => s.id === id);
-                      const costRange = intensity === 'recreational' ? sport?.costRange?.entryLevel : sport?.costRange?.competitive;
-                      return (
-                        <div key={id} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700 rounded-lg">
-                          <div>
-                            <p className="font-medium text-slate-800 dark:text-white">{sport?.name}</p>
-                            <p className="text-sm text-slate-600 dark:text-slate-400 capitalize">{intensity}</p>
-                          </div>
-                          <p className="font-bold text-slate-800 dark:text-white">
-                            ${costRange ? ((costRange.min + costRange.max) / 2).toLocaleString() : 0}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
+                    );
+                  })}
+                </CardContent>
+              </Card>
             )}
+
+            {/* Comparison */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingDown className="w-5 h-5" />
+                  How It Compares
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Average family</span>
+                  <span className="font-semibold">$2,400/year</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">Your region (SB)</span>
+                  <span className="font-semibold">$2,100/year</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 dark:text-gray-400">High-end combo</span>
+                  <span className="font-semibold">$5,500/year</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
-      </main>
+
+        {selectedSports.length === 0 && (
+          <div className="mt-8 p-6 bg-blue-50 dark:bg-blue-950 rounded-lg text-center">
+            <p className="text-gray-700 dark:text-gray-300">
+              Select sports from the list above to see how much you'd spend per year.
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

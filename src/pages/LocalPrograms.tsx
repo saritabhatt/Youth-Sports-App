@@ -37,7 +37,7 @@ export default function LocalPrograms() {
               value={userZip}
               onChange={(e) => setUserZip(e.target.value)}
               placeholder="93101"
-              maxLength="5"
+              maxLength={5}
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none"
             />
           </div>
