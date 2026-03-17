@@ -25,7 +25,7 @@ export const useSaveProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (profile: ChildProfile) => {
+    mutationFn: async (profile: ChildProfile) => {
       saveProfile(profile);
       return profile;
     },
@@ -43,7 +43,7 @@ export const useDeleteProfile = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (profileId: string) => {
+    mutationFn: async (profileId: string) => {
       deleteProfile(profileId);
       return profileId;
     },

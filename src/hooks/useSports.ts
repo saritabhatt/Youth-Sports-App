@@ -29,7 +29,7 @@ export const useSaveWeights = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (weights: ScoringWeights) => {
+    mutationFn: async (weights: ScoringWeights) => {
       saveWeights(weights);
       return weights;
     },

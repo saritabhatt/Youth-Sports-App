@@ -17,9 +17,8 @@ export const ChildProfileSchema = z.object({
     .min(4, 'Age must be at least 4 years old')
     .max(18, 'Age must be 18 or younger'),
   gender: z
-    .enum(['male', 'female', 'other', 'prefer-not-to-say'], {
-      errorMap: () => ({ message: 'Please select a gender' })
-    }),
+    .enum(['male', 'female', 'other', 'prefer-not-to-say'])
+    .default('male'),
   zipCode: z
     .string()
     .regex(/^\d{5}(-\d{4})?$/, 'Enter a valid 5-digit ZIP code'),
