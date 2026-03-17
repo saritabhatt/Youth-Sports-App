@@ -2,7 +2,8 @@ import { useEffect, useRef, useMemo } from 'react';
 import { ScoredSport } from '../data/scoringEngine';
 import { SPORT_CATEGORIES, REGION_NAMES, RegionType, SportCategory } from '../data/sportsData';
 import { getProgramsBySportName } from '../data/localProgramsData';
-import { MapPin, Globe, Phone } from 'lucide-react';
+import { useLocalOrganizations } from '../hooks/useLocalOrganizations';
+import { MapPin, Globe, Phone, Loader } from 'lucide-react';
 
 interface SportDetailModalProps {
   scoredSport: ScoredSport;
@@ -22,6 +23,43 @@ export default function SportDetailModal({ scoredSport, region, onClose }: Sport
     () => getProgramsBySportName(sport.name, region as 'santa-barbara' | 'los-angeles' | 'ventura' | 'san-luis-obispo' | 'kern-county' | 'inyo-county'),
     [sport.name, region]
   );
+
+  // Fetch web search results for local organizations
+  const { organizations: webOrganizations, loading: webLoading } = useLocalOrganizations(
+    sport.name,
+    "Santa Barbara, CA"
+  );
+
+  // Combine local programs with web search results
+  const allOrganizations = useMemo(() => {
+    // Convert local programs to organization format
+    const localOrgs = localPrograms.map(p => ({
+      name: p.name,
+      type: p.programType,
+      location: p.location,
+      description: p.description,
+      phone: p.contact?.phone,
+      website: p.contact?.website,
+      source: 'local' as const
+    }));
+    
+    // Add web search results
+    const webOrgs = webOrganizations.map(org => ({
+      ...org,
+      source: 'web' as const
+    }));
+    
+    // Combine and deduplicate by name (case-insensitive)
+    const seen = new Set<string>();
+    const combined = [...localOrgs, ...webOrgs].filter(org => {
+      const key = org.name.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    
+    return combined.slice(0, 8);
+  }, [localPrograms, webOrganizations]);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -285,61 +323,68 @@ export default function SportDetailModal({ scoredSport, region, onClose }: Sport
             <h3 className="text-lg font-semibold text-slate-800 mb-3 flex items-center gap-2">
               <MapPin className="w-5 h-5 text-emerald-600" />
               Local Programs & Organizations
+              {webLoading && <Loader className="w-4 h-4 animate-spin text-emerald-600" />}
             </h3>
-            {localPrograms.length > 0 ? (
+            {allOrganizations.length > 0 ? (
               <div className="space-y-3">
-                {localPrograms.slice(0, 5).map((program) => (
-                  <div key={program.id} className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
+                {allOrganizations.map((org, idx) => (
+                  <div key={`${org.name}-${idx}`} className="p-4 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl border border-emerald-100">
                     <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h4 className="font-semibold text-slate-900">{program.name}</h4>
-                        <p className="text-sm text-slate-600">{program.organization}</p>
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-slate-900">{org.name}</h4>
+                        <p className="text-xs text-slate-500">{org.source === 'web' ? '🔍 From web search' : '✓ Local database'}</p>
                       </div>
-                      <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
-                        {program.programType}
-                      </span>
+                      {org.type && (
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full whitespace-nowrap ml-2">
+                          {org.type}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm text-slate-600 mb-3">{program.description}</p>
+                    {org.description && (
+                      <p className="text-sm text-slate-600 mb-3">{org.description}</p>
+                    )}
                     <div className="space-y-2 text-sm">
-                      {program.location && (
+                      {org.location && (
                         <div className="flex items-center gap-2 text-slate-600">
-                          <MapPin className="w-4 h-4 text-emerald-600" />
-                          {program.location}
+                          <MapPin className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          {org.location}
                         </div>
                       )}
-                      {program.contact?.phone && (
+                      {org.phone && (
                         <div className="flex items-center gap-2 text-slate-600">
-                          <Phone className="w-4 h-4 text-emerald-600" />
-                          {program.contact.phone}
+                          <Phone className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                          <a href={`tel:${org.phone}`} className="hover:text-emerald-600">
+                            {org.phone}
+                          </a>
                         </div>
                       )}
-                      {program.contact?.website && (
+                      {org.website && (
                         <a 
-                          href={program.contact.website} 
+                          href={org.website} 
                           target="_blank" 
                           rel="noopener noreferrer"
                           className="flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
                         >
-                          <Globe className="w-4 h-4" />
+                          <Globe className="w-4 h-4 flex-shrink-0" />
                           Visit Website
                         </a>
                       )}
                     </div>
                   </div>
                 ))}
-                {localPrograms.length > 5 && (
-                  <div className="p-3 bg-blue-50 rounded-xl text-center">
-                    <p className="text-sm text-blue-700 font-medium">
-                      {localPrograms.length - 5} more programs available
-                    </p>
-                  </div>
-                )}
+              </div>
+            ) : webLoading ? (
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Loader className="w-5 h-5 animate-spin text-blue-600" />
+                  <p className="text-slate-600 font-medium">Searching for local programs...</p>
+                </div>
               </div>
             ) : (
               <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100 text-center">
-                <p className="text-slate-600 mb-4">No local programs found in our database.</p>
+                <p className="text-slate-600 mb-4">No local programs found.</p>
                 <a
-                  href={`https://www.google.com/search?q=${encodeURIComponent(sport.name + ' programs near Santa Barbara CA')}`}
+                  href={`https://www.google.com/search?q=${encodeURIComponent(sport.name + ' youth programs near Santa Barbara California')}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-indigo-700 transition-all"

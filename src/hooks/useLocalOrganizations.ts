@@ -21,22 +21,25 @@ export function useLocalOrganizations(sportName: string, location: string = 'San
       setLoading(true);
       setError(null);
       try {
-        // Call our backend API that will do the web search
-        const response = await fetch('/api/search-local-orgs', {
+        // Call our Netlify function that will do the web search
+        const response = await fetch('/.netlify/functions/search-local-orgs', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ sport: sportName, location })
         });
         
         if (!response.ok) {
-          throw new Error('Failed to fetch organizations');
+          console.warn('Search function failed, using empty results');
+          setOrganizations([]);
+          return;
         }
         
         const data = await response.json();
         setOrganizations(data.organizations || []);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        console.error('Error fetching organizations:', err);
+        console.warn('Error fetching organizations:', err);
+        // Silently fail - will show the Google Search fallback instead
+        setOrganizations([]);
       } finally {
         setLoading(false);
       }
